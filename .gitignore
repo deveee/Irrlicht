@@ -64,3 +64,5 @@ cmake-build-release/
 xcuserdata
 project.xcworkspace
 .idea/
+DerivedData
+bin

@@ -14,7 +14,9 @@
 #ifdef _IRR_COMPILE_WITH_OSX_DEVICE_
 
 #import <Cocoa/Cocoa.h>
-#import <OpenGL/gl.h>
+
+// MetalANGLE header
+#import <GLES2/gl2.h>
 
 #include "CIrrDeviceOSX.h"
 
@@ -30,7 +32,12 @@
 #include "CColorConverter.h"
 #include "irrlicht.h"
 
+#if defined(_IRR_COMPILE_WITH_OPENGL_)
 #include "CNSOGLManager.h"
+#else
+#include "CEGLManager.h"
+#endif
+
 
 #if defined _IRR_COMPILE_WITH_JOYSTICK_EVENTS_
 
@@ -461,7 +468,11 @@ namespace irr
 {
 	namespace video
 	{
+#ifdef _IRR_COMPILE_WITH_OGLES2_
+		IVideoDriver* createOGLES2Driver(const SIrrlichtCreationParameters& param, io::IFileSystem* io, IContextManager* contextManager);
+#else
 		IVideoDriver* createOpenGLDriver(const SIrrlichtCreationParameters& param, io::IFileSystem* io, IContextManager* contextManager);
+#endif
 	}
 } // end namespace irr
 
@@ -638,6 +649,12 @@ void CIrrDeviceMacOSX::closeDevice()
 		SoftwareDriverTarget = nil;
 	}
 
+	if (View != nil)
+	{
+		[View release];
+		View = nil;
+	}
+
 	if (Window != nil)
 	{
 		[Window setIsVisible:FALSE];
@@ -720,7 +737,7 @@ bool CIrrDeviceMacOSX::createWindow()
 		CreationParams.WindowSize.Height *= scale;
 	}
 
-	const NSBackingStoreType type = (CreationParams.DriverType == video::EDT_OPENGL) ? NSBackingStoreBuffered : NSBackingStoreNonretained;
+	const NSBackingStoreType type = NSBackingStoreBuffered;
 
 #if 0
 	if (!CreationParams.Fullscreen)
@@ -843,6 +860,17 @@ bool CIrrDeviceMacOSX::createWindow()
 			[Window setAcceptsMouseMovedEvents:TRUE];
 			[Window setIsVisible:TRUE];
 			[Window makeKeyAndOrderFront:nil];
+
+            NSRect frame = NSMakeRect(0, 0, Window.frame.size.width, Window.frame.size.height);
+            View = [[NSView alloc] initWithFrame:frame];
+            if ( nil == View ) {
+                os::Printer::log("View is Null", ELL_WARNING);
+            } else {
+                os::Printer::log("NSView Created OK", ELL_INFORMATION);
+            }
+            [View setWantsLayer:YES];
+            View.layer.contentsScale = 1;
+            [Window setContentView:View];
 		}
 
 #if 0
@@ -974,6 +1002,34 @@ void CIrrDeviceMacOSX::createDriver()
 		case video::EDT_DIRECT3D9:
 			os::Printer::log("This driver is not available in OSX. Try OpenGL or Software renderer.", ELL_ERROR);
 			break;
+
+ 		case video::EDT_OGLES2:
+#ifdef _IRR_COMPILE_WITH_OGLES2_
+		{
+			video::SExposedVideoData data;
+			data.OpenGLOSX.Window = View.layer;
+
+#ifdef _IRR_COMPILE_WITH_EGL_MANAGER_
+			ContextManager = new video::CEGLManager();
+#else
+			os::Printer::log("No EGL support compiled in.", ELL_ERROR);
+			break;
+#endif
+			if ( ContextManager ) {
+				ContextManager->initialize(CreationParams, data);
+			}
+
+			VideoDriver = video::createOGLES2Driver(CreationParams, FileSystem, ContextManager);
+			if (!VideoDriver)
+			{
+				os::Printer::log("Could not create OpenGL ES 2.0 driver.", ELL_ERROR);
+			}
+		}
+#else
+			os::Printer::log("No OpenGL ES 2.0 support compiled in.", ELL_ERROR);
+#endif
+
+ 			break;
 
 		case video::EDT_NULL:
 			VideoDriver = video::createNullDriver(FileSystem, CreationParams.WindowSize);

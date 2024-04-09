@@ -14,6 +14,8 @@
 #include "EPrimitiveTypes.h"
 #include "EMeshBufferTypes.h"
 
+#include <memory>
+
 namespace irr
 {
 namespace scene
@@ -211,6 +213,17 @@ s		\param updateBoundingBox When true update boundingbox by the added vertices *
 		//\param cloneFlags A combination of ECloneFlags
 		virtual IMeshBuffer* createClone(int cloneFlags=ECF_VERTICES|ECF_INDICES) const = 0;
 
+		// Caching buffer link in this class for faster retrieval
+		class IHWBufferLink
+		{
+		public:
+			virtual ~IHWBufferLink() {}
+		};
+
+		void linkHWBuffer(std::weak_ptr<IHWBufferLink> ref) const { mHWBufferLinkRef = ref; }
+		std::weak_ptr<IHWBufferLink> getHWBufferLinkRef() const { return mHWBufferLinkRef; }
+	private:
+		mutable std::weak_ptr<IHWBufferLink> mHWBufferLinkRef;
 	};
 
 } // end namespace scene

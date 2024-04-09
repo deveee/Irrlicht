@@ -103,6 +103,7 @@
 #define _IRR_IOS_PLATFORM_
 #if !defined(_IRR_COMPILE_WITH_SDL_DEVICE_)
 #define _IRR_COMPILE_WITH_IOS_DEVICE_
+// #define NO_IRR_COMPILE_WITH_OGLES1_
 // The application state events and following methods: IrrlichtDevice::isWindowActive, IrrlichtDevice::isWindowFocused,
 // IrrlichtDevice::isWindowMinimized works out of box only if you'll use built-in CIrrDelegateiOS,
 // so _IRR_COMPILE_WITH_IOS_BUILTIN_MAIN_ must be enabled in this case. If you need a custom UIApplicationDelegate
@@ -115,9 +116,9 @@
 #if !defined(_IRR_COMPILE_WITH_SDL_DEVICE_)
 #define _IRR_COMPILE_WITH_OSX_DEVICE_
 #endif
+// Use MetalANGLE instead of native OpenGL which is deprecated
+#define NO_IRR_COMPILE_WITH_OPENGL_
 #define NO_IRR_COMPILE_WITH_OGLES1_
-#define NO_IRR_COMPILE_WITH_OGLES2_
-#define NO_IRR_COMPILE_WITH_WEBGL1_
 #endif
 #endif
 
@@ -284,6 +285,8 @@ Depending on platform you may have to enable _IRR_OGLES1_USE_KHRONOS_API_HEADERS
 #ifndef _IRR_COMPILE_WITH_EAGL_MANAGER_
 #define _IRR_COMPILE_WITH_EAGL_MANAGER_
 #endif
+#elif defined(_IRR_COMPILE_WITH_OSX_DEVICE_)
+#define _IRR_COMPILE_WITH_EGL_MANAGER_
 #endif
 #endif
 
@@ -320,6 +323,8 @@ define out. */
 #ifndef _IRR_COMPILE_WITH_EAGL_MANAGER_
 #define _IRR_COMPILE_WITH_EAGL_MANAGER_
 #endif
+#elif defined(_IRR_COMPILE_WITH_OSX_DEVICE_)
+#define _IRR_COMPILE_WITH_EGL_MANAGER_
 #endif
 #endif
 
