@@ -334,10 +334,10 @@ namespace video
 		virtual bool needsTransparentRenderPass(const irr::video::SMaterial& material) const IRR_OVERRIDE;
 
 		//! OpenGL specific
-		virtual const char *getGLVersionString() _IRR_OVERRIDE_;
+		virtual const char *getGLVersionString() IRR_OVERRIDE;
 
 		//! OpenGL specific
-		virtual const char *getGLExtensionsString() _IRR_OVERRIDE_;
+		virtual const char *getGLExtensionsString() IRR_OVERRIDE;
 
 		//! Convert E_BLEND_FACTOR to OpenGL equivalent
 		GLenum getGLBlend(E_BLEND_FACTOR factor) const;

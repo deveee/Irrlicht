@@ -2921,7 +2921,7 @@ COGLES2Driver::~COGLES2Driver()
 			supported = true;
 			if (Version >= 300)
 			{
-				internalFormat = GL_DEPTH_COMPONENT16_OES;
+				internalFormat = GL_DEPTH_COMPONENT16;
 			}
 			pixelFormat = GL_DEPTH_COMPONENT;
 			pixelType = GL_UNSIGNED_SHORT;
