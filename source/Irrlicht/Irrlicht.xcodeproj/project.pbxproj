@@ -9,8 +9,6 @@
 /* Begin PBXBuildFile section */
 		0A125AA9255FC9E90036BB20 /* CMGLManager.mm in Sources */ = {isa = PBXBuildFile; fileRef = 0A125A69255FC9E80036BB20 /* CMGLManager.mm */; };
 		0A125AAA255FC9E90036BB20 /* CMGLOrEAGLFunctions.mm in Sources */ = {isa = PBXBuildFile; fileRef = 0A125AA6255FC9E80036BB20 /* CMGLOrEAGLFunctions.mm */; };
-		0A125AAB255FC9E90036BB20 /* CMGLManager.h in Headers */ = {isa = PBXBuildFile; fileRef = 0A125AA7255FC9E80036BB20 /* CMGLManager.h */; };
-		0A125AAC255FC9E90036BB20 /* CMGLOrEAGLFunctions.h in Headers */ = {isa = PBXBuildFile; fileRef = 0A125AA8255FC9E90036BB20 /* CMGLOrEAGLFunctions.h */; };
 		0A7A36BE24075B4600E9B2C1 /* COGLES2Driver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5E5733F91C18E2E2003F664E /* COGLES2Driver.cpp */; };
 		0A7A36BF24075B4B00E9B2C1 /* COGLES2ExtensionHandler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5E5733FB1C18E2E2003F664E /* COGLES2ExtensionHandler.cpp */; };
 		0A7A36C024075B4E00E9B2C1 /* COGLES2FixedPipelineRenderer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5E5733FD1C18E2E2003F664E /* COGLES2FixedPipelineRenderer.cpp */; };
@@ -371,6 +369,8 @@
 		5E79089B1C10FEF900DFE7FE /* CB3DMeshWriter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5E7908981C10FE4A00DFE7FE /* CB3DMeshWriter.cpp */; };
 		8495BD2E28C0E591009FCF4D /* CIrrDeviceSDL.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8495BD2C28C0E591009FCF4D /* CIrrDeviceSDL.cpp */; };
 		8495BD2F28C0E591009FCF4D /* CIrrDeviceSDL.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8495BD2C28C0E591009FCF4D /* CIrrDeviceSDL.cpp */; };
+		84BECD742C223F2900CCDB68 /* CIrrDeviceOSX.mm in Sources */ = {isa = PBXBuildFile; fileRef = 84BECD722C223F2900CCDB68 /* CIrrDeviceOSX.mm */; };
+		84BECD772C223F3D00CCDB68 /* CIrrDeviceiOS.mm in Sources */ = {isa = PBXBuildFile; fileRef = 84BECD752C223F3D00CCDB68 /* CIrrDeviceiOS.mm */; };
 		84F8F0A72AD4B0D500808A33 /* prng.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 84F8F0952AD4B0D500808A33 /* prng.cpp */; };
 		84F8F0A82AD4B0D500808A33 /* prng.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 84F8F0952AD4B0D500808A33 /* prng.cpp */; };
 		84F8F0A92AD4B0D500808A33 /* aeskey.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 84F8F0962AD4B0D500808A33 /* aeskey.cpp */; };
@@ -394,8 +394,6 @@
 /* Begin PBXFileReference section */
 		0A125A69255FC9E80036BB20 /* CMGLManager.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = CMGLManager.mm; sourceTree = "<group>"; };
 		0A125AA6255FC9E80036BB20 /* CMGLOrEAGLFunctions.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = CMGLOrEAGLFunctions.mm; sourceTree = "<group>"; };
-		0A125AA7255FC9E80036BB20 /* CMGLManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CMGLManager.h; sourceTree = "<group>"; };
-		0A125AA8255FC9E90036BB20 /* CMGLOrEAGLFunctions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CMGLOrEAGLFunctions.h; sourceTree = "<group>"; };
 		0A7A36C624075C8C00E9B2C1 /* CEGLManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CEGLManager.h; sourceTree = "<group>"; usesTabs = 1; };
 		0A7A36C724075C8C00E9B2C1 /* CEGLManager.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CEGLManager.cpp; sourceTree = "<group>"; usesTabs = 1; };
 		5E34C6E21B7F4AFB00F212E8 /* aabbox3d.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = aabbox3d.h; path = ../../include/aabbox3d.h; sourceTree = "<group>"; };
@@ -968,6 +966,10 @@
 		8495BD2B28C0E591009FCF4D /* CIrrDeviceSDL.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CIrrDeviceSDL.h; sourceTree = "<group>"; };
 		8495BD2C28C0E591009FCF4D /* CIrrDeviceSDL.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; fileEncoding = 4; path = CIrrDeviceSDL.cpp; sourceTree = "<group>"; };
 		84A219A4249F823800E189FC /* SOverrideMaterial.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SOverrideMaterial.h; path = ../../include/SOverrideMaterial.h; sourceTree = "<group>"; };
+		84BECD712C223F2900CCDB68 /* CIrrDeviceOSX.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CIrrDeviceOSX.h; sourceTree = "<group>"; };
+		84BECD722C223F2900CCDB68 /* CIrrDeviceOSX.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = CIrrDeviceOSX.mm; sourceTree = "<group>"; };
+		84BECD752C223F3D00CCDB68 /* CIrrDeviceiOS.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = CIrrDeviceiOS.mm; sourceTree = "<group>"; };
+		84BECD762C223F3D00CCDB68 /* CIrrDeviceiOS.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CIrrDeviceiOS.h; sourceTree = "<group>"; };
 		84F8F0942AD4B0D500808A33 /* aesopt.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = aesopt.h; path = aesGladman/aesopt.h; sourceTree = "<group>"; };
 		84F8F0952AD4B0D500808A33 /* prng.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = prng.cpp; path = aesGladman/prng.cpp; sourceTree = "<group>"; };
 		84F8F0962AD4B0D500808A33 /* aeskey.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = aeskey.cpp; path = aesGladman/aeskey.cpp; sourceTree = "<group>"; };
@@ -1004,6 +1006,7 @@
 				5E34C6DF1B7F4AB500F212E8 /* include */,
 				5E34C6E01B7F4ABD00F212E8 /* Irrlicht */,
 				5E34C9F41B7F6E3400F212E8 /* Products */,
+				84BECD702C223EDA00CCDB68 /* Recovered References */,
 			);
 			sourceTree = "<group>";
 		};
@@ -1433,6 +1436,10 @@
 		5E34C8061B7F51F100F212E8 /* device */ = {
 			isa = PBXGroup;
 			children = (
+				84BECD762C223F3D00CCDB68 /* CIrrDeviceiOS.h */,
+				84BECD752C223F3D00CCDB68 /* CIrrDeviceiOS.mm */,
+				84BECD712C223F2900CCDB68 /* CIrrDeviceOSX.h */,
+				84BECD722C223F2900CCDB68 /* CIrrDeviceOSX.mm */,
 				8495BD2C28C0E591009FCF4D /* CIrrDeviceSDL.cpp */,
 				8495BD2B28C0E591009FCF4D /* CIrrDeviceSDL.h */,
 				5E34C80D1B7F52AC00F212E8 /* CIrrDeviceStub.cpp */,
@@ -1791,6 +1798,17 @@
 			name = "OpenGL Core";
 			sourceTree = "<group>";
 		};
+		84BECD702C223EDA00CCDB68 /* Recovered References */ = {
+			isa = PBXGroup;
+			children = (
+				0A7A36C724075C8C00E9B2C1 /* CEGLManager.cpp */,
+				0A7A36C624075C8C00E9B2C1 /* CEGLManager.h */,
+				0A125AA6255FC9E80036BB20 /* CMGLOrEAGLFunctions.mm */,
+				0A125A69255FC9E80036BB20 /* CMGLManager.mm */,
+			);
+			name = "Recovered References";
+			sourceTree = "<group>";
+		};
 		84F8F0932AD4B0BF00808A33 /* aesGladman */ = {
 			isa = PBXGroup;
 			children = (
@@ -2089,6 +2107,7 @@
 				5E34CC1A1B7F6EC900F212E8 /* CVideoModeList.cpp in Sources */,
 				0A7A36C324075B5500E9B2C1 /* COGLES2ParallaxMapRenderer.cpp in Sources */,
 				0A7A36C124075B5000E9B2C1 /* COGLES2MaterialRenderer.cpp in Sources */,
+				84BECD742C223F2900CCDB68 /* CIrrDeviceOSX.mm in Sources */,
 				0A7A36C224075B5300E9B2C1 /* COGLES2NormalMapRenderer.cpp in Sources */,
 				0A7A36D02407722400E9B2C1 /* COGLESDriver.cpp in Sources */,
 				0A7A36C924075C8C00E9B2C1 /* CEGLManager.cpp in Sources */,
@@ -2168,6 +2187,7 @@
 				5E5733481C18E212003F664E /* CSceneNodeAnimatorFollowSpline.cpp in Sources */,
 				5E5733491C18E212003F664E /* CSceneNodeAnimatorRotation.cpp in Sources */,
 				5E57334A1C18E212003F664E /* CSceneNodeAnimatorTexture.cpp in Sources */,
+				84BECD772C223F3D00CCDB68 /* CIrrDeviceiOS.mm in Sources */,
 				5E57334B1C18E212003F664E /* CMetaTriangleSelector.cpp in Sources */,
 				5E57334C1C18E212003F664E /* COctreeTriangleSelector.cpp in Sources */,
 				5E57334D1C18E212003F664E /* CSceneCollisionManager.cpp in Sources */,
@@ -2413,9 +2433,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				HEADER_SEARCH_PATHS = (
-					"${PROJECT_DIR}/../../include",
-				);
+				HEADER_SEARCH_PATHS = "${PROJECT_DIR}/../../include";
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_NAME = Irrlicht;
@@ -2449,9 +2467,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				HEADER_SEARCH_PATHS = (
-					"${PROJECT_DIR}/../../include",
-				);
+				HEADER_SEARCH_PATHS = "${PROJECT_DIR}/../../include";
 				MTL_ENABLE_DEBUG_INFO = NO;
 				PRODUCT_NAME = Irrlicht;
 				SDKROOT = macosx;
@@ -2478,9 +2494,7 @@
 				EXECUTABLE_PREFIX = lib;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_FAST_MATH = YES;
-				HEADER_SEARCH_PATHS = (
-					"${PROJECT_DIR}/../../include",
-				);
+				HEADER_SEARCH_PATHS = "${PROJECT_DIR}/../../include";
 				MTL_ENABLE_DEBUG_INFO = YES;
 				OTHER_CFLAGS = (
 					"-fvisibility=hidden",
@@ -2517,9 +2531,7 @@
 				EXECUTABLE_PREFIX = lib;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_FAST_MATH = YES;
-				HEADER_SEARCH_PATHS = (
-					"${PROJECT_DIR}/../../include",
-				);
+				HEADER_SEARCH_PATHS = "${PROJECT_DIR}/../../include";
 				MTL_ENABLE_DEBUG_INFO = NO;
 				OTHER_CFLAGS = (
 					"-fvisibility=hidden",
