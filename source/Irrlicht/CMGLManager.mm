@@ -12,7 +12,7 @@
 #include "CMGLOrEAGLFunctions.h"
 
 #import <UIKit/UIKit.h>
-#import <MGLKit/MGLKit.h>
+#import <MGLKit.h>
 
 namespace irr
 {

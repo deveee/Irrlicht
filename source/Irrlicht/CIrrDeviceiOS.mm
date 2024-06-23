@@ -19,7 +19,7 @@
 #import <CoreMotion/CoreMotion.h>
 
 // MetalANGLE
-#import <MGLKit/MGLKit.h>
+#import <MGLKit.h>
 
 /* Important information */
 
