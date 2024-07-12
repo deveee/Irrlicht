@@ -168,6 +168,11 @@ bool CB3DMeshFileLoader::readChunkNODE(CSkinnedMesh::SJoint *inJoint)
 	os::Printer::log(logStr.c_str(), joint->Name.c_str(), ELL_DEBUG);
 #endif
 
+	core::stringc filename = B3DFile->getFileName();
+	s32 new_calculations = filename.find("-new-skinned-mesh.b3d");
+	if (new_calculations != -1)
+		joint->UseNewCalculations = true;
+
 	f32 position[3], scale[3], rotation[4];
 
 	readFloats(position, 3);

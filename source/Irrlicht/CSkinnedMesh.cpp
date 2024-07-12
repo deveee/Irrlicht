@@ -1318,7 +1318,7 @@ void CSkinnedMesh::recoverJointsFromMesh(core::array<IBoneSceneNode*> &jointChil
 		IBoneSceneNode* node=jointChildSceneNodes[i];
 		SJoint *joint=AllJoints[i];
 
-		if ( joint->UseAnimationFrom )	// Seems to work better (else solution seems to mess up sometimes) and would be faster. Any disadvantage?
+		if ( joint->UseAnimationFrom && joint->UseNewCalculations )	// Seems to work better (else solution seems to mess up sometimes) and would be faster. Any disadvantage?
 		{
 			node->setPosition(joint->Animatedposition);
 			core::quaternion qrot = joint->Animatedrotation;

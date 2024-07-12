@@ -125,7 +125,7 @@ namespace scene
 		//! Joints
 		struct SJoint
 		{
-			SJoint() : UseAnimationFrom(0), GlobalSkinningSpace(false),
+			SJoint() : UseNewCalculations(false), UseAnimationFrom(0), GlobalSkinningSpace(false),
 				positionHint(-1),scaleHint(-1),rotationHint(-1)
 			{
 			}
@@ -163,6 +163,8 @@ namespace scene
 			core::quaternion Animatedrotation;
 
 			core::matrix4 GlobalInversedMatrix; //the x format pre-calculates this
+
+			bool UseNewCalculations;
 
 		private:
 			//! Internal members used by CSkinnedMesh
