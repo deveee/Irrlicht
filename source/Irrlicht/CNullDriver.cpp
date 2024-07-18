@@ -116,7 +116,7 @@ CNullDriver::CNullDriver(io::IFileSystem* io, const core::dimension2d<u32>& scre
 	setTextureCreationFlag(ETCF_ALWAYS_32_BIT, true);
 	setTextureCreationFlag(ETCF_CREATE_MIP_MAPS, true);
 	setTextureCreationFlag(ETCF_AUTO_GENERATE_MIP_MAPS, true);
-	setTextureCreationFlag(ETCF_ALLOW_MEMORY_COPY, false);
+	setTextureCreationFlag(ETCF_ALLOW_MEMORY_COPY, true);
 
 	ViewPort = core::rect<s32>(core::position2d<s32>(0,0), core::dimension2di(screenSize));
 
@@ -1443,7 +1443,7 @@ bool CNullDriver::checkImage(const core::array<IImage*>& image) const
 			if ( !checkImage(format, size) )
 				return false;
 		}
-	
+
 		return true;
 	}
 	return false;
