@@ -104,6 +104,8 @@ COGLES2Driver::COGLES2Driver(const SIrrlichtCreationParameters& params, io::IFil
 
 	ExposedData.OpenGLSDL.Window = device->getWindow();
 	ExposedData.OpenGLSDL.Context = device->getContext();
+	
+	SDL_GL_MakeCurrent(device->getWindow(), device->getContext());
 }
 
 #endif
@@ -467,6 +469,13 @@ COGLES2Driver::~COGLES2Driver()
 
 		if (ContextManager)
 			ContextManager->activateContext(videoData, true);
+			
+#ifdef _IRR_COMPILE_WITH_SDL_DEVICE_
+		if (DeviceType == EIDT_SDL)
+		{
+			SDL_GL_MakeCurrent(SDLDevice->getWindow(), SDLDevice->getContext());
+		}
+#endif
 
 		// Copied from OpenGL driver
 #if defined(_IRR_COMPILE_WITH_SDL_DEVICE_)
