@@ -43,7 +43,7 @@
 //! Example: NO_IRR_COMPILE_WITH_X11_ would disable X11
 
 //! Uncomment this line to compile with the SDL device
-#define _IRR_COMPILE_WITH_SDL_DEVICE_
+//#define _IRR_COMPILE_WITH_SDL_DEVICE_
 #ifdef NO_IRR_COMPILE_WITH_SDL_DEVICE_
 #undef _IRR_COMPILE_WITH_SDL_DEVICE_
 #endif
@@ -56,7 +56,7 @@
 #endif
 
 //! Comment this line to disable SDL gamecontroller and use irrlicht joystick instead
-#define _IRR_COMPILE_WITH_SDL_GAMECONTROLLER
+//#define _IRR_COMPILE_WITH_SDL_GAMECONTROLLER
 #ifdef NO_IRR_COMPILE_WITH_SDL_GAMECONTROLLER
 #undef _IRR_COMPILE_WITH_SDL_GAMECONTROLLER
 #endif

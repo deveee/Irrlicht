@@ -1,8 +1,5 @@
 LOCAL_PATH := $(call my-dir)/../..
-
-include $(CLEAR_VARS)
-
-IRRLICHT_LIB_PATH := $(LOCAL_PATH)/../../lib/Android-SDL2
+IRRLICHT_LIB_PATH := $(LOCAL_PATH)/../../lib/Android
 
 include $(CLEAR_VARS)
 
@@ -19,17 +16,12 @@ endif
 
 LOCAL_C_INCLUDES := ../../../include
 
-SDL2_PATH ?= $(error SDL2_PATH variable is not set)
-
-LOCAL_C_INCLUDES += $(SDL2_PATH)/include
-
 LOCAL_SRC_FILES := \
 					Android/CIrrDeviceAndroid.cpp \
 					Android/CAndroidAssetReader.cpp \
 					Android/CAndroidAssetFileArchive.cpp \
 					Android/CKeyEventWrapper.cpp \
-					minizip-ng/mz_crypt.c \
-					minizip-ng/mz_crypt_openssl.c \
+					burning_shader_color.cpp \
 					C3DSMeshFileLoader.cpp \
 					CAnimatedMeshHalfLife.cpp \
 					CAnimatedMeshMD2.cpp \
@@ -41,15 +33,23 @@ LOCAL_SRC_FILES := \
 					CBillboardSceneNode.cpp \
 					CBoneSceneNode.cpp \
 					CBSPMeshFileLoader.cpp \
+					CBurningShader_Raster_Reference.cpp \
 					CCameraSceneNode.cpp \
 					CColladaFileLoader.cpp \
 					CColladaMeshWriter.cpp \
 					CColorConverter.cpp \
 					CCSMLoader.cpp \
 					CCubeSceneNode.cpp \
+					CD3D9Driver.cpp \
+					CD3D9HLSLMaterialRenderer.cpp \
+					CD3D9NormalMapRenderer.cpp \
+					CD3D9ParallaxMapRenderer.cpp \
+					CD3D9ShaderMaterialRenderer.cpp \
+					CD3D9Texture.cpp \
 					CDefaultGUIElementFactory.cpp \
 					CDefaultSceneNodeAnimatorFactory.cpp \
 					CDefaultSceneNodeFactory.cpp \
+					CDepthBuffer.cpp \
 					CDMFLoader.cpp \
 					CDummyTransformationSceneNode.cpp \
 					CEmptySceneNode.cpp \
@@ -105,7 +105,12 @@ LOCAL_SRC_FILES := \
 					CImageWriterPSD.cpp \
 					CImageWriterTGA.cpp \
 					CImageLoaderPVR.cpp \
+					CIrrDeviceConsole.cpp \
+					CIrrDeviceFB.cpp \
+					CIrrDeviceLinux.cpp \
+					CIrrDeviceSDL.cpp \
 					CIrrDeviceStub.cpp \
+					CIrrDeviceWin32.cpp \
 					CIrrMeshFileLoader.cpp \
 					CIrrMeshWriter.cpp \
 					CLightSceneNode.cpp \
@@ -187,6 +192,10 @@ LOCAL_SRC_FILES := \
 					CSkyBoxSceneNode.cpp \
 					CSkyDomeSceneNode.cpp \
 					CSMFMeshFileLoader.cpp \
+					CSoftwareDriver.cpp \
+					CSoftwareDriver2.cpp \
+					CSoftwareTexture.cpp \
+					CSoftwareTexture2.cpp \
 					CSphereSceneNode.cpp \
 					CSTLMeshFileLoader.cpp \
 					CSTLMeshWriter.cpp \
@@ -194,8 +203,40 @@ LOCAL_SRC_FILES := \
 					CTerrainSceneNode.cpp \
 					CTerrainTriangleSelector.cpp \
 					CTextSceneNode.cpp \
+					CTRFlat.cpp \
+					CTRFlatWire.cpp \
+					CTRGouraud.cpp \
+					CTRGouraud2.cpp \
+					CTRGouraudAlphaNoZ2.cpp \
+					CTRGouraudWire.cpp \
 					CTriangleBBSelector.cpp \
 					CTriangleSelector.cpp \
+					CTRGouraudNoZ2.cpp \
+					CTRNormalMap.cpp \
+					CTRParallaxMap.cpp \
+					CTRStencilShadow.cpp \
+					CTRTextureBlend.cpp \
+					CTRTextureDetailMap2.cpp \
+					CTRTextureFlat.cpp \
+					CTRTextureFlatWire.cpp \
+					CTRTextureGouraud.cpp \
+					CTRTextureGouraud2.cpp \
+					CTRTextureGouraudAdd.cpp \
+					CTRTextureGouraudAdd2.cpp \
+					CTRTextureGouraudAddNoZ2.cpp \
+					CTRTextureGouraudAlpha.cpp \
+					CTRTextureGouraudAlphaNoZ.cpp \
+					CTRTextureGouraudNoZ.cpp \
+					CTRTextureGouraudNoZ2.cpp \
+					CTRTextureGouraudVertexAlpha2.cpp \
+					CTRTextureGouraudWire.cpp \
+					CTRTextureLightMap2_Add.cpp \
+					CTRTextureLightMap2_M1.cpp \
+					CTRTextureLightMap2_M2.cpp \
+					CTRTextureLightMap2_M4.cpp \
+					CTRTextureLightMapGouraud2_M4.cpp \
+					CTRTextureWire2.cpp \
+					CTR_transparent_reflection_2_layer.cpp \
 					CVideoModeList.cpp \
 					CVolumeLightSceneNode.cpp \
 					CWADReader.cpp \
@@ -204,17 +245,19 @@ LOCAL_SRC_FILES := \
 					CXMeshFileLoader.cpp \
 					CXMLReader.cpp \
 					CXMLWriter.cpp \
+					CZBuffer.cpp \
 					CZipReader.cpp \
+					IBurningShader.cpp \
 					Irrlicht.cpp \
 					irrXML.cpp \
-					os.cpp \
-					utf8.cpp
+					os.cpp
 
 LOCAL_STATIC_LIBRARIES := android_native_app_glue
 
 include $(BUILD_STATIC_LIBRARY)
 
-all: $(IRRLICHT_LIB_PATH)/$(TARGET_ARCH_ABI)/$(IRRLICHT_LIB_NAME)
-$(IRRLICHT_LIB_PATH)/$(TARGET_ARCH_ABI)/$(IRRLICHT_LIB_NAME) : $(TARGET_OUT)/$(IRRLICHT_LIB_NAME)
-	mkdir -p "`dirname $@`"
+$(call import-module,android/native_app_glue)
+
+all: $(IRRLICHT_LIB_PATH)
+$(IRRLICHT_LIB_PATH) : $(TARGET_OUT)/$(IRRLICHT_LIB_NAME)
 	cp $< $@
