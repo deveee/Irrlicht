@@ -165,6 +165,8 @@ bool CEGLManager::generateSurface()
 
     if (Params.Vsync)
 		eglSwapInterval(EglDisplay, 1);
+	else
+		eglSwapInterval(EglDisplay, 0);
 
     return true;
 }
