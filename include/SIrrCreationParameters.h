@@ -102,6 +102,7 @@ namespace irr
 		EIDT_COCOA is only available on Mac OSX,
 		EIDT_X11 is available on Linux, Solaris, BSD and other operating systems which use X11,
 		EIDT_SDL is available on most systems if compiled in,
+		EIDT_SFML is available on most systems if compiled in,
 		EIDT_CONSOLE is usually available but can only render to text,
 		EIDT_BEST will select the best available device for your operating system.
 		Default: EIDT_BEST. */

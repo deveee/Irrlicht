@@ -8,6 +8,10 @@
 #ifdef _IRR_COMPILE_WITH_SDL_DEVICE_
 #include <SDL.h>
 #endif
+#ifdef _IRR_COMPILE_WITH_SFML_DEVICE_
+#include <SFML/Window/Context.hpp>
+#include <SFML/Window/Window.hpp>
+#endif
 
 // forward declarations for internal pointers
 struct IDirect3D9;
@@ -115,6 +119,17 @@ struct SExposedVideoData
 	};
 #endif
 
+#ifdef _IRR_COMPILE_WITH_SFML_DEVICE_	
+	struct SOpenGLSFML
+	{
+		//! The SFML window object.
+		sf::Window* Window;
+		
+		//! The SFML OpenGL context object.
+		sf::Context* Context;
+	};
+#endif
+
 	union
 	{
 		SD3D9 D3D9;
@@ -126,6 +141,9 @@ struct SExposedVideoData
 		SOGLESAndroid OGLESAndroid;
 #ifdef _IRR_COMPILE_WITH_SDL_DEVICE_
 		SOpenGLSDL OpenGLSDL;
+#endif
+#ifdef _IRR_COMPILE_WITH_SFML_DEVICE_
+		SOpenGLSFML OpenGLSFML;
 #endif
 	};
 };
