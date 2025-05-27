@@ -29,6 +29,10 @@
 #include "CIrrDeviceSDL.h"
 #endif
 
+#ifdef _IRR_COMPILE_WITH_SFML_DEVICE_
+#include "CIrrDeviceSFML.h"
+#endif
+
 #ifdef _IRR_COMPILE_WITH_ANDROID_DEVICE_
 #include "android_native_app_glue.h"
 #endif
@@ -108,6 +112,25 @@ COGLES2Driver::COGLES2Driver(const SIrrlichtCreationParameters& params, io::IFil
 
 #endif
 
+#ifdef _IRR_COMPILE_WITH_SFML_DEVICE_
+COGLES2Driver::COGLES2Driver(const SIrrlichtCreationParameters& params, io::IFileSystem* io, CIrrDeviceSFML* device)
+	: CNullDriver(io, params.WindowSize), COGLES2ExtensionHandler(), CacheHandler(0),
+	Params(params), ResetRenderStates(true), LockRenderStateMode(false), AntiAlias(params.AntiAlias),
+	MaterialRenderer2DActive(0), MaterialRenderer2DTexture(0), MaterialRenderer2DNoTexture(0),
+	CurrentRenderMode(ERM_NONE), Transformation3DChanged(true),
+	OGLES2ShaderPath(params.OGLES2ShaderPath),
+	ColorFormat(ECF_R8G8B8), SFMLDevice(device), ContextManager(0), DeviceType(EIDT_SFML)
+{
+#ifdef _DEBUG
+	setDebugName("COGLES2Driver");
+#endif
+
+	ExposedData.OpenGLSFML.Window = device->getWindow();
+	ExposedData.OpenGLSFML.Context = device->getContext();
+}
+
+#endif
+
 COGLES2Driver::~COGLES2Driver()
 {
 	RequestedLights.clear();
@@ -161,6 +184,16 @@ COGLES2Driver::~COGLES2Driver()
 			SDL_VERSION(&info.version);
 			SDL_GetWindowWMInfo(SDLDevice->getWindow(), &info);
 			CacheHandler->setFBO(info.info.uikit.framebuffer);
+		}
+#endif
+
+#if defined(_IRR_COMPILE_WITH_SFML_DEVICE_) && defined(_IRR_IOS_PLATFORM_)
+		if ( DeviceType == EIDT_SFML )
+		{
+			//~ SDL_SysWMinfo info;
+			//~ SDL_VERSION(&info.version);
+			//~ SDL_GetWindowWMInfo(SDLDevice->getWindow(), &info);
+			//~ CacheHandler->setFBO(info.info.uikit.framebuffer);
 		}
 #endif
 
@@ -473,8 +506,8 @@ COGLES2Driver::~COGLES2Driver()
 			ContextManager->activateContext(videoData, true);
 
 		// Copied from OpenGL driver
-#if defined(_IRR_COMPILE_WITH_SDL_DEVICE_)
-		if ( DeviceType == EIDT_SDL )
+#if defined(_IRR_COMPILE_WITH_SDL_DEVICE_) || defined(_IRR_COMPILE_WITH_SFML_DEVICE_)
+		if ( DeviceType == EIDT_SDL ||  DeviceType == EIDT_SFML )
 			glFrontFace(GL_CW);
 #endif
 
@@ -507,6 +540,20 @@ COGLES2Driver::~COGLES2Driver()
 #endif
 
 			SDL_GL_SwapWindow(SDLDevice->getWindow());
+			status = true;
+		}
+#endif
+
+#ifdef _IRR_COMPILE_WITH_SFML_DEVICE_
+		if ( DeviceType == EIDT_SFML )
+		{
+//~ #ifdef _IRR_IOS_PLATFORM_
+			//~ SDL_SysWMinfo info;
+			//~ SDL_VERSION(&info.version);
+			//~ SDL_GetWindowWMInfo(SDLDevice->getWindow(), &info);
+			//~ glBindRenderbuffer(GL_RENDERBUFFER, info.info.uikit.colorbuffer);
+//~ #endif
+			SFMLDevice->getWindow()->display();
 			status = true;
 		}
 #endif
@@ -2552,6 +2599,15 @@ COGLES2Driver::~COGLES2Driver()
 				frameBufferID = info.info.uikit.framebuffer;
 			}
 			#endif
+			#if defined(_IRR_COMPILE_WITH_SFML_DEVICE_) && defined(_IRR_IOS_PLATFORM_)
+			if ( DeviceType == EIDT_SDL )
+			{
+				//~ SDL_SysWMinfo info;
+				//~ SDL_VERSION(&info.version);
+				//~ SDL_GetWindowWMInfo(SDLDevice->getWindow(), &info);
+				//~ frameBufferID = info.info.uikit.framebuffer;
+			}
+			#endif
 
 			CacheHandler->setFBO(frameBufferID);
 
@@ -3132,6 +3188,23 @@ IVideoDriver* createOGLES2Driver(const SIrrlichtCreationParameters& params,
 #endif //  _IRR_COMPILE_WITH_OGLES2_
 }
 #endif // _IRR_COMPILE_WITH_SDL_DEVICE_
+
+// -----------------------------------
+// SFML VERSION
+// -----------------------------------
+#ifdef _IRR_COMPILE_WITH_SFML_DEVICE_
+IVideoDriver* createOGLES2Driver(const SIrrlichtCreationParameters& params,
+		io::IFileSystem* io, CIrrDeviceSFML* device)
+{
+#ifdef _IRR_COMPILE_WITH_OGLES2_
+	COGLES2Driver* driver = new COGLES2Driver(params, io, device);
+	driver->genericDriverInit(params.WindowSize, params.Stencilbuffer);	// don't call in constructor, it uses virtual function calls of driver
+	return driver;
+#else
+	return 0;
+#endif //  _IRR_COMPILE_WITH_OGLES2_
+}
+#endif // _IRR_COMPILE_WITH_SFML_DEVICE_
 
 } // end namespace
 } // end namespace

@@ -23,6 +23,9 @@
 #ifdef _IRR_COMPILE_WITH_SDL_DEVICE_
 #include "CIrrDeviceSDL.h"
 #endif
+#ifdef _IRR_COMPILE_WITH_SFML_DEVICE_
+#include "CIrrDeviceSFML.h"
+#endif
 
 namespace irr
 {
@@ -64,6 +67,25 @@ COpenGLDriver::COpenGLDriver(const SIrrlichtCreationParameters& params, io::IFil
 
 	ExposedData.OpenGLSDL.Window = device->getWindow();
 	ExposedData.OpenGLSDL.Context = device->getContext();
+
+	genericDriverInit();
+}
+
+#endif
+
+#ifdef _IRR_COMPILE_WITH_SFML_DEVICE_
+COpenGLDriver::COpenGLDriver(const SIrrlichtCreationParameters& params, io::IFileSystem* io, CIrrDeviceSFML* device)
+	: CNullDriver(io, params.WindowSize), COpenGLExtensionHandler(), CacheHandler(0),
+	CurrentRenderMode(ERM_NONE), ResetRenderStates(true), Transformation3DChanged(true),
+	AntiAlias(params.AntiAlias), ColorFormat(ECF_R8G8B8), FixedPipelineState(EOFPS_ENABLE),
+	Params(params), SFMLDevice(device), ContextManager(0), DeviceType(EIDT_SFML)
+{
+#ifdef _DEBUG
+	setDebugName("COpenGLDriver");
+#endif
+
+	ExposedData.OpenGLSFML.Window = device->getWindow();
+	ExposedData.OpenGLSFML.Context = device->getContext();
 
 	genericDriverInit();
 }
@@ -293,8 +315,8 @@ bool COpenGLDriver::beginScene(u16 clearFlag, SColor clearColor, f32 clearDepth,
 	if (ContextManager)
 		ContextManager->activateContext(videoData, true);
 
-#if defined(_IRR_COMPILE_WITH_SDL_DEVICE_)
-	if ( DeviceType == EIDT_SDL )
+#if defined(_IRR_COMPILE_WITH_SDL_DEVICE_) || defined(_IRR_COMPILE_WITH_SFML_DEVICE_)
+	if ( DeviceType == EIDT_SDL || DeviceType == EIDT_SFML )
 		glFrontFace(GL_CW);
 #endif
 
@@ -318,6 +340,14 @@ bool COpenGLDriver::endScene()
 	if ( DeviceType == EIDT_SDL )
 	{
 		SDL_GL_SwapWindow(SDLDevice->getWindow());
+		status = true;
+	}
+#endif
+
+#ifdef _IRR_COMPILE_WITH_SFML_DEVICE_
+	if ( DeviceType == EIDT_SFML )
+	{
+		SFMLDevice->getWindow()->display();
 		status = true;
 	}
 #endif
@@ -4502,6 +4532,21 @@ IVideoDriver* createOpenGLDriver(const SIrrlichtCreationParameters& params,
 #endif //  _IRR_COMPILE_WITH_OPENGL_
 }
 #endif // _IRR_COMPILE_WITH_SDL_DEVICE_
+
+// -----------------------------------
+// SFML VERSION
+// -----------------------------------
+#ifdef _IRR_COMPILE_WITH_SFML_DEVICE_
+IVideoDriver* createOpenGLDriver(const SIrrlichtCreationParameters& params,
+		io::IFileSystem* io, CIrrDeviceSFML* device)
+{
+#ifdef _IRR_COMPILE_WITH_OPENGL_
+	return new COpenGLDriver(params, io, device);
+#else
+	return 0;
+#endif //  _IRR_COMPILE_WITH_OPENGL_
+}
+#endif // _IRR_COMPILE_WITH_SFML_DEVICE_
 
 } // end namespace
 } // end namespace

@@ -64,7 +64,7 @@ namespace irr
 //! constructor
 CIrrDeviceSFML::CIrrDeviceSFML(const SIrrlichtCreationParameters& param)
 	: CIrrDeviceStub(param),
-	//~ Window(0), Context(0),
+	Window(0), Context(0),
 	MouseX(0), MouseY(0), MouseButtonStates(0),
 	Width(param.WindowSize.Width), Height(param.WindowSize.Height),
 	WindowHasFocus(false), WindowMinimized(false),
@@ -88,11 +88,11 @@ CIrrDeviceSFML::CIrrDeviceSFML(const SIrrlichtCreationParameters& param)
 		//~ SDL_SetHint(SDL_HINT_NO_SIGNAL_HANDLERS, "1");
 		//~ SDL_SetHint(SDL_HINT_ACCELEROMETER_AS_JOYSTICK, "0");
 
-		//~ // Disable simulated mouse events
+		// Disable simulated mouse events
 		//~ SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
 
-		//~ // Enable simulated touch events on Android versions that don't support
-		//~ // relative mouse mode. Disable on other platforms.
+		// Enable simulated touch events on Android versions that don't support
+		// relative mouse mode. Disable on other platforms.
 //~ #if defined(_IRR_ANDROID_PLATFORM_) || defined(_IRR_IOS_PLATFORM_)
 		//~ SDL_SetHint(SDL_HINT_MOUSE_TOUCH_EVENTS, ShouldUseRelativeMouse ? "0" : "1");
 //~ #else
@@ -107,7 +107,7 @@ CIrrDeviceSFML::CIrrDeviceSFML(const SIrrlichtCreationParameters& param)
 		//~ flags |= SDL_INIT_JOYSTICK;
 //~ #endif
 
-		//~ // Initialize SDL... Timer for sleep, video for the obvious
+		// Initialize SDL... Timer for sleep, video for the obvious
 		//~ if (SDL_Init(flags) < 0)
 		//~ {
 			//~ os::Printer::log("Unable to initialize SDL!", SDL_GetError());
@@ -130,21 +130,17 @@ CIrrDeviceSFML::CIrrDeviceSFML(const SIrrlichtCreationParameters& param)
 #endif
 	}
 
-	//~ SDL_version version;
-	//~ SDL_VERSION(&version);
+	core::stringc sfmlversion = "SFML Version ";
+	sfmlversion += SFML_VERSION_MAJOR;
+	sfmlversion += ".";
+	sfmlversion += SFML_VERSION_MINOR;
+	sfmlversion += ".";
+	sfmlversion += SFML_VERSION_PATCH;
 
-	//~ SDL_GetVersion(&version);
-	//~ core::stringc sdlversion = "SDL Version ";
-	//~ sdlversion += version.major;
-	//~ sdlversion += ".";
-	//~ sdlversion += version.minor;
-	//~ sdlversion += ".";
-	//~ sdlversion += version.patch;
-
-	//~ Operator = new COSOperator(sdlversion, this);
+	Operator = new COSOperator(sfmlversion, this);
 	if ( SFMLDeviceInstances == 1 )
 	{
-		//~ os::Printer::log(sdlversion.c_str(), ELL_INFORMATION);
+		os::Printer::log(sfmlversion.c_str(), ELL_INFORMATION);
 	}
 
 	// create keymap
@@ -170,25 +166,7 @@ CIrrDeviceSFML::CIrrDeviceSFML(const SIrrlichtCreationParameters& param)
 		if (!success)
 			return;
 
-		if (CreationParams.DriverType == video::EDT_OPENGL ||
-			CreationParams.DriverType == video::EDT_OGLES2 ||
-			CreationParams.DriverType == video::EDT_OGLES1)
-		{
-			if (param.Vsync)
-			{
-				// Try adaptive vsync first
-				//~ int ret = SDL_GL_SetSwapInterval(-1);
-
-				//~ if (ret == -1)
-				//~ {
-					//~ SDL_GL_SetSwapInterval(1);
-				//~ }
-			}
-			else
-			{
-				//~ SDL_GL_SetSwapInterval(0);
-			}
-		}
+		Window->setVerticalSyncEnabled(param.Vsync);
 	}
 
 	// create cursor control
@@ -249,22 +227,21 @@ bool CIrrDeviceSFML::createWindow()
 	// window. Use desktop size in windowed mode.
 	if (!CreationParams.Fullscreen && (Width == 0 || Height == 0))
 	{
-		//~ SDL_DisplayMode mode = {};
-		//~ int err = SDL_GetDesktopDisplayMode(0, &mode);
+		sf::VideoMode mode = sf::VideoMode::getDesktopMode();
 
-		//~ if (err == 0)
-		//~ {
-			//~ Width = roundf((float)mode.w * NativeScaleX);
-			//~ Height = roundf((float)mode.h * NativeScaleY);
+		if (mode.width > 0 || mode.height > 0)
+		{
+			Width = roundf((float)mode.width * NativeScaleX);
+			Height = roundf((float)mode.height * NativeScaleY);
 
-		//~ }
-		//~ else
-		//~ {
-			//~ // Shouldn't happen, just in case
-			//~ Width = 640;
-			//~ Height = 480;
+		}
+		else
+		{
+			// Shouldn't happen, just in case
+			Width = 640;
+			Height = 480;
 
-		//~ }
+		}
 	}
 
 	bool success = createWindowWithContext();
@@ -391,48 +368,42 @@ bool CIrrDeviceSFML::createWindow()
 
 bool CIrrDeviceSFML::createWindowWithContext()
 {
-	//~ int SDL_Flags = 0;
-
-	//~ if (CreationParams.Fullscreen)
-	//~ {
-		//~ SDL_Flags |= SDL_WINDOW_FULLSCREEN;
-	//~ }
-	//~ else if (Resizable)
-	//~ {
-		//~ SDL_Flags |= SDL_WINDOW_RESIZABLE;
-	//~ }
-
-	//~ if (CreationParams.DriverType == video::EDT_OPENGL ||
-		//~ CreationParams.DriverType == video::EDT_OGLES2 ||
-		//~ CreationParams.DriverType == video::EDT_OGLES1)
-	//~ {
-//~ #if defined(_IRR_IOS_PLATFORM_) || defined(_IRR_OSX_PLATFORM_)
-		//~ SDL_Flags |= SDL_WINDOW_ALLOW_HIGHDPI;
-//~ #endif
-
-		//~ SDL_Flags |= SDL_WINDOW_OPENGL;
-
-		//~ if (CreationParams.DriverType == video::EDT_OGLES2)
-		//~ {
-			//~ SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
-			//~ SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-			//~ SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
-		//~ }
-		//~ else if (CreationParams.DriverType == video::EDT_OGLES1)
-		//~ {
-			//~ SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
-			//~ SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 1);
-			//~ SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
-		//~ }
-		//~ else
-		//~ {
-			//~ // As said in WGL cotext manager:
-			//~ // with 3.0 all available profiles should be usable, higher versions impose restrictions
-			//~ // we need at least 1.1
-			//~ SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, 0);
-			//~ SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 1);
-			//~ SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
-		//~ }
+	sf::Uint32 sfmlStyle = sf::Style::Default;
+	
+	if (CreationParams.Fullscreen)
+	{
+		sfmlStyle = sf::Style::Fullscreen;
+	}
+	else if (Resizable)
+	{
+		sfmlStyle = sf::Style::Default; // Default includes resize
+	}
+	else
+	{
+		sfmlStyle = sf::Style::Titlebar | sf::Style::Close;
+	}
+	
+	sf::ContextSettings ContextSettings;
+	
+	if (CreationParams.DriverType == video::EDT_OPENGL ||
+		CreationParams.DriverType == video::EDT_OGLES2 ||
+		CreationParams.DriverType == video::EDT_OGLES1)
+	{
+		if (CreationParams.DriverType == video::EDT_OGLES2)
+		{
+			ContextSettings.majorVersion = 3;
+			ContextSettings.minorVersion = 0;
+		}
+		else if (CreationParams.DriverType == video::EDT_OGLES1)
+		{
+			ContextSettings.majorVersion = 1;
+			ContextSettings.minorVersion = 0;
+		}
+		else
+		{
+			ContextSettings.majorVersion = 1;
+			ContextSettings.minorVersion = 1;
+		}
 
 		//~ if (CreationParams.Bits <= 16)
 		//~ {
@@ -447,85 +418,86 @@ bool CIrrDeviceSFML::createWindowWithContext()
 			//~ SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
 		//~ }
 
+		ContextSettings.depthBits = CreationParams.ZBufferBits;
+		ContextSettings.stencilBits = CreationParams.Stencilbuffer ? 8 : 0;
+		
+		if (CreationParams.AntiAlias > 1)
+		{
+			ContextSettings.antialiasingLevel = CreationParams.AntiAlias;
+		}
+		else
+		{
+			ContextSettings.antialiasingLevel = 0;
+		}
+		
 		//~ SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, CreationParams.WithAlphaChannel ? 1 : 0);
-		//~ SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, CreationParams.ZBufferBits);
 		//~ SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, CreationParams.Doublebuffer ? 1 : 0);
-		//~ SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, CreationParams.Stencilbuffer ? 1 : 0);
 		//~ SDL_GL_SetAttribute(SDL_GL_STEREO, CreationParams.Stereobuffer ? 1 : 0);
+	}
 
-		//~ if (CreationParams.AntiAlias > 1)
-		//~ {
-			//~ SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
-			//~ SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, CreationParams.AntiAlias);
-		//~ }
-		//~ else
-		//~ {
-			//~ SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 0);
-			//~ SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 0);
-		//~ }
-	//~ }
+	sf::VideoMode videoMode(
+		static_cast<unsigned int>(roundf((float)Width / NativeScaleX)),
+		static_cast<unsigned int>(roundf((float)Height / NativeScaleY))
+	);
 
-	//~ Window = SDL_CreateWindow("", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-							//~ roundf((float)Width / NativeScaleX),
-							//~ roundf((float)Height / NativeScaleY), SDL_Flags);
-
-	//~ if (CreationParams.DriverType == video::EDT_OPENGL ||
-		//~ CreationParams.DriverType == video::EDT_OGLES2 ||
-		//~ CreationParams.DriverType == video::EDT_OGLES1)
-	//~ {
-		//~ if (Window)
-		//~ {
-			//~ Context = SDL_GL_CreateContext(Window);
-		//~ }
-	//~ }
-
-	//~ if (!Context && CreationParams.DriverType == video::EDT_OGLES2)
-	//~ {
-		//~ if (Window)
-		//~ {
-			//~ SDL_DestroyWindow(Window);
-			//~ Window = NULL;
-		//~ }
-
-		//~ SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
-
-		//~ Window = SDL_CreateWindow("", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-								//~ roundf((float)Width / NativeScaleX),
-								//~ roundf((float)Height / NativeScaleY), SDL_Flags);
-
-		//~ if (Window)
-		//~ {
-			//~ Context = SDL_GL_CreateContext(Window);
-		//~ }
-	//~ }
-
-	//~ if (CreationParams.DriverType == video::EDT_OPENGL ||
-		//~ CreationParams.DriverType == video::EDT_OGLES2 ||
-		//~ CreationParams.DriverType == video::EDT_OGLES1)
-	//~ {
-		//~ if (!Context)
-		//~ {
-			//~ SDL_DestroyWindow(Window);
-			//~ Window = NULL;
-			//~ return false;
-		//~ }
-	//~ }
-
-	//~ updateNativeScale();
-
-	//~ if (CreationParams.WindowSize.Width == 0 || CreationParams.WindowSize.Height == 0)
-	//~ {
-		//~ int w = 0;
-		//~ int h = 0;
-		//~ SDL_GetWindowSize(Window, &w, &h);
-
-		//~ Width = roundf((float)w * NativeScaleX);
-		//~ Height = roundf((float)h * NativeScaleY);
-	//~ }
-
-	//~ CreationParams.WindowSize.Width = Width;
-	//~ CreationParams.WindowSize.Height = Height;
-
+	Window = new sf::Window(videoMode, "", sfmlStyle, ContextSettings);
+	
+	if (CreationParams.DriverType == video::EDT_OPENGL ||
+		CreationParams.DriverType == video::EDT_OGLES2 ||
+		CreationParams.DriverType == video::EDT_OGLES1)
+	{
+		//~ Context = new sf::Context(...);
+	}
+	
+	if (!Window || !Window->isOpen())
+	{
+		if (Window)
+		{
+			delete Window;
+			Window = nullptr;
+		}
+		
+		// Fallback for OGLES2 - try version 2.0
+		if (CreationParams.DriverType == video::EDT_OGLES2)
+		{
+			ContextSettings.majorVersion = 2;
+			ContextSettings.minorVersion = 0;
+			
+			Window = new sf::Window(videoMode, "", sfmlStyle, ContextSettings);
+			
+			if (Window && Window->isOpen())
+			{
+				//~ Context = new sf::Context(...);
+			}
+			else
+			{
+				if (Window)
+				{
+					delete Window;
+					Window = nullptr;
+				}
+				return false;
+			}
+		}
+		else
+		{
+			return false;
+		}
+	}
+	
+	updateNativeScale();
+	
+	// Update dimensions if they were set to 0
+	if (CreationParams.WindowSize.Width == 0 || CreationParams.WindowSize.Height == 0)
+	{
+		sf::Vector2u windowSize = Window->getSize();
+		Width = roundf((float)windowSize.x * NativeScaleX);
+		Height = roundf((float)windowSize.y * NativeScaleY);
+	}
+	
+	CreationParams.WindowSize.Width = Width;
+	CreationParams.WindowSize.Height = Height;
+	
 	return true;
 }
 
@@ -653,14 +625,14 @@ bool CIrrDeviceSFML::run()
 		return false;
 
 	SEvent irrevent;
-	//~ SDL_Event SDL_event;
+	sf::Event sfml_event;
 
-	//~ while (!Close && SDL_PollEvent(&SDL_event))
-	//~ {
-		//~ // os::Printer::log("event: ", core::stringc((int)SDL_event.type).c_str(), ELL_INFORMATION); // just for debugging
+	while (!Close && Window->pollEvent(sfml_event))
+	{
+		// os::Printer::log("event: ", core::stringc((int)SDL_event.type).c_str(), ELL_INFORMATION); // just for debugging
 
-		//~ switch (SDL_event.type)
-		//~ {
+		switch (sfml_event.type)
+		{
 		//~ case SDL_APP_WILLENTERBACKGROUND:
 			//~ irrevent.EventType = irr::EET_APPLICATION_EVENT;
 			//~ irrevent.ApplicationEvent.EventType = irr::EAET_WILL_PAUSE;
@@ -809,170 +781,160 @@ bool CIrrDeviceSFML::run()
 			//~ TouchIDs.erase(SDL_event.tfinger.fingerId);
 			//~ break;
 
-		//~ case SDL_MOUSEWHEEL:
-			//~ {
-				//~ irrevent.EventType = irr::EET_MOUSE_INPUT_EVENT;
-				//~ irrevent.MouseInput.Event = irr::EMIE_MOUSE_WHEEL;
-				//~ irrevent.MouseInput.X = MouseX;
-				//~ irrevent.MouseInput.Y = MouseY;
+		case sf::Event::MouseWheelScrolled:
+			{
+				irrevent.EventType = irr::EET_MOUSE_INPUT_EVENT;
+				irrevent.MouseInput.Event = irr::EMIE_MOUSE_WHEEL;
+				irrevent.MouseInput.X = MouseX;
+				irrevent.MouseInput.Y = MouseY;
 
-				//~ const Uint8* keyboardState = SDL_GetKeyboardState(NULL);
+#if defined(_IRR_IOS_PLATFORM_) || defined(_IRR_OSX_PLATFORM_)
+				irrevent.MouseInput.Control = sf::Keyboard::isKeyPressed(sf::Keyboard::LSystem) ||
+					sf::Keyboard::isKeyPressed(sf::Keyboard::RSystem);
+#else
+				irrevent.MouseInput.Control = sf::Keyboard::isKeyPressed(sf::Keyboard::LControl) ||
+					sf::Keyboard::isKeyPressed(sf::Keyboard::RControl);
+#endif
+				irrevent.MouseInput.Shift = sf::Keyboard::isKeyPressed(sf::Keyboard::LShift) ||
+					sf::Keyboard::isKeyPressed(sf::Keyboard::RShift);
 
-//~ #if defined(_IRR_IOS_PLATFORM_) || defined(_IRR_OSX_PLATFORM_)
-				//~ irrevent.MouseInput.Control = keyboardState[SDL_SCANCODE_LGUI] ||
-					//~ keyboardState[SDL_SCANCODE_RGUI];
-//~ #else
-				//~ irrevent.MouseInput.Control = keyboardState[SDL_SCANCODE_LCTRL] ||
-					//~ keyboardState[SDL_SCANCODE_RCTRL];
-//~ #endif
-				//~ irrevent.MouseInput.Shift = keyboardState[SDL_SCANCODE_LSHIFT] ||
-					//~ keyboardState[SDL_SCANCODE_RSHIFT];
+				irrevent.MouseInput.ButtonStates = MouseButtonStates;
+				
+				if (sfml_event.mouseWheelScroll.wheel == sf::Mouse::VerticalWheel)
+				{
+					irrevent.MouseInput.Wheel = sfml_event.mouseWheelScroll.delta;
+				}
+				else if (sfml_event.mouseWheelScroll.wheel == sf::Mouse::HorizontalWheel)
+				{
+					irrevent.MouseInput.Wheel = sfml_event.mouseWheelScroll.delta;
+				}
 
-				//~ irrevent.MouseInput.ButtonStates = MouseButtonStates;
-//~ #if SDL_VERSION_ATLEAST(2, 0, 18)
-				//~ irrevent.MouseInput.Wheel = SDL_event.wheel.preciseX + SDL_event.wheel.preciseY;
-//~ #else
-				//~ irrevent.MouseInput.Wheel = SDL_event.wheel.x + SDL_event.wheel.y;
-//~ #endif
+				postEventFromUser(irrevent);
+			}
+			break;
+		case sf::Event::MouseMoved:
+			{
+#if defined(_IRR_ANDROID_PLATFORM_) || defined(_IRR_IOS_PLATFORM_)
+				if (!ShouldUseRelativeMouse)
+					break;
+#endif
 
-				//~ postEventFromUser(irrevent);
-			//~ }
-			//~ break;
-		//~ case SDL_MOUSEMOTION:
-			//~ {
-//~ #if defined(_IRR_ANDROID_PLATFORM_) || defined(_IRR_IOS_PLATFORM_)
-				//~ if (!ShouldUseRelativeMouse)
-					//~ break;
-//~ #endif
+				if (IgnoreWarpMouseEvent)
+				{
+					IgnoreWarpMouseEvent = false;
+					break;
+				}
 
-				//~ if (IgnoreWarpMouseEvent)
-				//~ {
-					//~ IgnoreWarpMouseEvent = false;
-					//~ break;
-				//~ }
+				irrevent.EventType = irr::EET_MOUSE_INPUT_EVENT;
+				irrevent.MouseInput.Event = irr::EMIE_MOUSE_MOVED;
 
-				//~ irrevent.EventType = irr::EET_MOUSE_INPUT_EVENT;
-				//~ irrevent.MouseInput.Event = irr::EMIE_MOUSE_MOVED;
+				MouseX = irrevent.MouseInput.X = sfml_event.mouseMove.x * NativeScaleX;
+				MouseY = irrevent.MouseInput.Y = sfml_event.mouseMove.y * NativeScaleY;
 
-				//~ if (ShouldUseRelativeMouse && SDL_GetRelativeMouseMode())
-				//~ {
-					//~ MouseX = irrevent.MouseInput.X = MouseX + SDL_event.motion.xrel * NativeScaleX;
-					//~ MouseY = irrevent.MouseInput.Y = MouseY + SDL_event.motion.yrel * NativeScaleY;
-				//~ }
-				//~ else
-				//~ {
-					//~ MouseX = irrevent.MouseInput.X = SDL_event.motion.x * NativeScaleX;
-					//~ MouseY = irrevent.MouseInput.Y = SDL_event.motion.y * NativeScaleY;
-				//~ }
+#if defined(_IRR_IOS_PLATFORM_) || defined(_IRR_OSX_PLATFORM_)
+				irrevent.MouseInput.Control = sf::Keyboard::isKeyPressed(sf::Keyboard::LSystem) ||
+					sf::Keyboard::isKeyPressed(sf::Keyboard::RSystem);
+#else
+				irrevent.MouseInput.Control = sf::Keyboard::isKeyPressed(sf::Keyboard::LControl) ||
+					sf::Keyboard::isKeyPressed(sf::Keyboard::RControl);
+#endif
+				irrevent.MouseInput.Shift = sf::Keyboard::isKeyPressed(sf::Keyboard::LShift) ||
+					sf::Keyboard::isKeyPressed(sf::Keyboard::RShift);
 
-				//~ const Uint8* keyboardState = SDL_GetKeyboardState(NULL);
+				irrevent.MouseInput.ButtonStates = MouseButtonStates;
 
-//~ #if defined(_IRR_IOS_PLATFORM_) || defined(_IRR_OSX_PLATFORM_)
-				//~ irrevent.MouseInput.Control = keyboardState[SDL_SCANCODE_LGUI] ||
-					//~ keyboardState[SDL_SCANCODE_RGUI];
-//~ #else
-				//~ irrevent.MouseInput.Control = keyboardState[SDL_SCANCODE_LCTRL] ||
-					//~ keyboardState[SDL_SCANCODE_RCTRL];
-//~ #endif
-				//~ irrevent.MouseInput.Shift = keyboardState[SDL_SCANCODE_LSHIFT] ||
-					//~ keyboardState[SDL_SCANCODE_RSHIFT];
+				postEventFromUser(irrevent);
+			}
+			break;
+		case sf::Event::MouseButtonPressed:
+		case sf::Event::MouseButtonReleased:
+			{
+#if defined(_IRR_ANDROID_PLATFORM_) || defined(_IRR_IOS_PLATFORM_)
+				if (!ShouldUseRelativeMouse)
+					break;
+#endif
 
-				//~ irrevent.MouseInput.ButtonStates = MouseButtonStates;
+				irrevent.EventType = irr::EET_MOUSE_INPUT_EVENT;
+				irrevent.MouseInput.X = sfml_event.mouseButton.x * NativeScaleX;
+				irrevent.MouseInput.Y = sfml_event.mouseButton.y * NativeScaleY;
 
-				//~ postEventFromUser(irrevent);
-			//~ }
-			//~ break;
-		//~ case SDL_MOUSEBUTTONDOWN:
-		//~ case SDL_MOUSEBUTTONUP:
-			//~ {
-//~ #if defined(_IRR_ANDROID_PLATFORM_) || defined(_IRR_IOS_PLATFORM_)
-				//~ if (!ShouldUseRelativeMouse)
-					//~ break;
-//~ #endif
+#if defined(_IRR_IOS_PLATFORM_) || defined(_IRR_OSX_PLATFORM_)
+				irrevent.MouseInput.Control = sf::Keyboard::isKeyPressed(sf::Keyboard::LSystem) ||
+					sf::Keyboard::isKeyPressed(sf::Keyboard::RSystem);
+#else
+				irrevent.MouseInput.Control = sf::Keyboard::isKeyPressed(sf::Keyboard::LControl) ||
+					sf::Keyboard::isKeyPressed(sf::Keyboard::RControl);
+#endif
+				irrevent.MouseInput.Shift = sf::Keyboard::isKeyPressed(sf::Keyboard::LShift) ||
+					sf::Keyboard::isKeyPressed(sf::Keyboard::RShift);
 
-				//~ irrevent.EventType = irr::EET_MOUSE_INPUT_EVENT;
-				//~ irrevent.MouseInput.X = SDL_event.button.x * NativeScaleX;
-				//~ irrevent.MouseInput.Y = SDL_event.button.y * NativeScaleY;
+				irrevent.MouseInput.Event = irr::EMIE_MOUSE_MOVED;
 
-				//~ const Uint8* keyboardState = SDL_GetKeyboardState(NULL);
+				switch (sfml_event.mouseButton.button)
+				{
+				case sf::Mouse::Left:
+					if (sfml_event.type == sf::Event::MouseButtonPressed)
+					{
+						irrevent.MouseInput.Event = irr::EMIE_LMOUSE_PRESSED_DOWN;
+						MouseButtonStates |= irr::EMBSM_LEFT;
+					}
+					else
+					{
+						irrevent.MouseInput.Event = irr::EMIE_LMOUSE_LEFT_UP;
+						MouseButtonStates &= ~irr::EMBSM_LEFT;
+					}
+					break;
 
-//~ #if defined(_IRR_IOS_PLATFORM_) || defined(_IRR_OSX_PLATFORM_)
-				//~ irrevent.MouseInput.Control = keyboardState[SDL_SCANCODE_LGUI] ||
-					//~ keyboardState[SDL_SCANCODE_RGUI];
-//~ #else
-				//~ irrevent.MouseInput.Control = keyboardState[SDL_SCANCODE_LCTRL] ||
-					//~ keyboardState[SDL_SCANCODE_RCTRL];
-//~ #endif
-				//~ irrevent.MouseInput.Shift = keyboardState[SDL_SCANCODE_LSHIFT] ||
-					//~ keyboardState[SDL_SCANCODE_RSHIFT];
+				case sf::Mouse::Right:
+					if (sfml_event.type == sf::Event::MouseButtonPressed)
+					{
+						irrevent.MouseInput.Event = irr::EMIE_RMOUSE_PRESSED_DOWN;
+						MouseButtonStates |= irr::EMBSM_RIGHT;
+					}
+					else
+					{
+						irrevent.MouseInput.Event = irr::EMIE_RMOUSE_LEFT_UP;
+						MouseButtonStates &= ~irr::EMBSM_RIGHT;
+					}
+					break;
 
-				//~ irrevent.MouseInput.Event = irr::EMIE_MOUSE_MOVED;
+				case sf::Mouse::Middle:
+					if (sfml_event.type == sf::Event::MouseButtonPressed)
+					{
+						irrevent.MouseInput.Event = irr::EMIE_MMOUSE_PRESSED_DOWN;
+						MouseButtonStates |= irr::EMBSM_MIDDLE;
+					}
+					else
+					{
+						irrevent.MouseInput.Event = irr::EMIE_MMOUSE_LEFT_UP;
+						MouseButtonStates &= ~irr::EMBSM_MIDDLE;
+					}
+					break;
+				}
 
-				//~ switch(SDL_event.button.button)
-				//~ {
-				//~ case SDL_BUTTON_LEFT:
-					//~ if (SDL_event.type == SDL_MOUSEBUTTONDOWN)
-					//~ {
-						//~ irrevent.MouseInput.Event = irr::EMIE_LMOUSE_PRESSED_DOWN;
-						//~ MouseButtonStates |= irr::EMBSM_LEFT;
-					//~ }
-					//~ else
-					//~ {
-						//~ irrevent.MouseInput.Event = irr::EMIE_LMOUSE_LEFT_UP;
-						//~ MouseButtonStates &= ~irr::EMBSM_LEFT;
-					//~ }
-					//~ break;
+				irrevent.MouseInput.ButtonStates = MouseButtonStates;
 
-				//~ case SDL_BUTTON_RIGHT:
-					//~ if (SDL_event.type == SDL_MOUSEBUTTONDOWN)
-					//~ {
-						//~ irrevent.MouseInput.Event = irr::EMIE_RMOUSE_PRESSED_DOWN;
-						//~ MouseButtonStates |= irr::EMBSM_RIGHT;
-					//~ }
-					//~ else
-					//~ {
-						//~ irrevent.MouseInput.Event = irr::EMIE_RMOUSE_LEFT_UP;
-						//~ MouseButtonStates &= ~irr::EMBSM_RIGHT;
-					//~ }
-					//~ break;
+				if (irrevent.MouseInput.Event != irr::EMIE_MOUSE_MOVED)
+				{
+					postEventFromUser(irrevent);
 
-				//~ case SDL_BUTTON_MIDDLE:
-					//~ if (SDL_event.type == SDL_MOUSEBUTTONDOWN)
-					//~ {
-						//~ irrevent.MouseInput.Event = irr::EMIE_MMOUSE_PRESSED_DOWN;
-						//~ MouseButtonStates |= irr::EMBSM_MIDDLE;
-					//~ }
-					//~ else
-					//~ {
-						//~ irrevent.MouseInput.Event = irr::EMIE_MMOUSE_LEFT_UP;
-						//~ MouseButtonStates &= ~irr::EMBSM_MIDDLE;
-					//~ }
-					//~ break;
-				//~ }
-
-				//~ irrevent.MouseInput.ButtonStates = MouseButtonStates;
-
-				//~ if (irrevent.MouseInput.Event != irr::EMIE_MOUSE_MOVED)
-				//~ {
-					//~ postEventFromUser(irrevent);
-
-					//~ if ( irrevent.MouseInput.Event >= EMIE_LMOUSE_PRESSED_DOWN && irrevent.MouseInput.Event <= EMIE_MMOUSE_PRESSED_DOWN )
-					//~ {
-						//~ u32 clicks = checkSuccessiveClicks(irrevent.MouseInput.X, irrevent.MouseInput.Y, irrevent.MouseInput.Event);
-						//~ if ( clicks == 2 )
-						//~ {
-							//~ irrevent.MouseInput.Event = (EMOUSE_INPUT_EVENT)(EMIE_LMOUSE_DOUBLE_CLICK + irrevent.MouseInput.Event-EMIE_LMOUSE_PRESSED_DOWN);
-							//~ postEventFromUser(irrevent);
-						//~ }
-						//~ else if ( clicks == 3 )
-						//~ {
-							//~ irrevent.MouseInput.Event = (EMOUSE_INPUT_EVENT)(EMIE_LMOUSE_TRIPLE_CLICK + irrevent.MouseInput.Event-EMIE_LMOUSE_PRESSED_DOWN);
-							//~ postEventFromUser(irrevent);
-						//~ }
-					//~ }
-				//~ }
-			//~ }
-			//~ break;
+					if ( irrevent.MouseInput.Event >= EMIE_LMOUSE_PRESSED_DOWN && irrevent.MouseInput.Event <= EMIE_MMOUSE_PRESSED_DOWN )
+					{
+						u32 clicks = checkSuccessiveClicks(irrevent.MouseInput.X, irrevent.MouseInput.Y, irrevent.MouseInput.Event);
+						if ( clicks == 2 )
+						{
+							irrevent.MouseInput.Event = (EMOUSE_INPUT_EVENT)(EMIE_LMOUSE_DOUBLE_CLICK + irrevent.MouseInput.Event-EMIE_LMOUSE_PRESSED_DOWN);
+							postEventFromUser(irrevent);
+						}
+						else if ( clicks == 3 )
+						{
+							irrevent.MouseInput.Event = (EMOUSE_INPUT_EVENT)(EMIE_LMOUSE_TRIPLE_CLICK + irrevent.MouseInput.Event-EMIE_LMOUSE_PRESSED_DOWN);
+							postEventFromUser(irrevent);
+						}
+					}
+				}
+			}
+			break;
 
 		//~ case SDL_KEYDOWN:
 		//~ case SDL_KEYUP:
@@ -1054,9 +1016,9 @@ bool CIrrDeviceSFML::run()
 			//~ break;
 //~ #endif
 
-		//~ case SDL_QUIT:
-			//~ Close = true;
-			//~ return false;
+		case sf::Event::Closed:
+			Close = true;
+			return false;
 
 		//~ case SDL_WINDOWEVENT:
 			//~ {
@@ -1138,11 +1100,11 @@ bool CIrrDeviceSFML::run()
 			//~ postEventFromUser(irrevent);
 			//~ break;
 
-		//~ default:
-			//~ break;
-		//~ } // end switch
+		default:
+			break;
+		} // end switch
 
-	//~ } // end while
+	} // end while
 
 //~ #if defined(_IRR_COMPILE_WITH_SFML_GAMECONTROLLER)
 	//~ for (u32 i = 0; i < Joysticks.size(); i++)
