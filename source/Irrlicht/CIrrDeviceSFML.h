@@ -18,6 +18,7 @@
 #include "ICursorControl.h"
 
 #include <SFML/System/Sleep.hpp>
+#include <SFML/Window/Clipboard.hpp>
 #include <SFML/Window/Context.hpp>
 #include <SFML/Window/Event.hpp>
 #include <SFML/Window/Window.hpp>
@@ -127,8 +128,6 @@ namespace irr
 		virtual bool isGyroscopeAvailable() IRR_OVERRIDE;
 
 		sf::Window* getWindow() const { return Window; }
-
-		sf::Context* getContext() const { return Context; }
 
 		f32 getNativeScaleX() { return NativeScaleX; }
 
@@ -278,7 +277,6 @@ namespace irr
 		bool supportsRelativeMouse();
 
 		sf::Window* Window;
-		sf::Context* Context;
 //~ #if defined(_IRR_COMPILE_WITH_JOYSTICK_EVENTS_) || defined(_IRR_COMPILE_WITH_SDL_GAMECONTROLLER)
 		//~ core::array<SDL_JoystickID> Joysticks;
 //~ #endif

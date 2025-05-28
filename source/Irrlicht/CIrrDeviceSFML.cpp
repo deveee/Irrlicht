@@ -29,12 +29,6 @@
 #import <AppKit/AppKit.h>
 #endif
 
-//~ #ifdef _MSC_VER
-//~ #pragma comment(lib, "SDL2.lib")
-//~ #endif // _MSC_VER
-
-static int SFMLDeviceInstances = 0;
-
 namespace irr
 {
 	namespace video
@@ -64,7 +58,7 @@ namespace irr
 //! constructor
 CIrrDeviceSFML::CIrrDeviceSFML(const SIrrlichtCreationParameters& param)
 	: CIrrDeviceStub(param),
-	Window(0), Context(0),
+	Window(0),
 	MouseX(0), MouseY(0), MouseButtonStates(0),
 	Width(param.WindowSize.Width), Height(param.WindowSize.Height),
 	WindowHasFocus(false), WindowMinimized(false),
@@ -83,8 +77,6 @@ CIrrDeviceSFML::CIrrDeviceSFML(const SIrrlichtCreationParameters& param)
 	ShouldUseRelativeMouse = supportsRelativeMouse();
 #endif
 
-	if ( ++SFMLDeviceInstances == 1 )
-	{
 		//~ SDL_SetHint(SDL_HINT_NO_SIGNAL_HANDLERS, "1");
 		//~ SDL_SetHint(SDL_HINT_ACCELEROMETER_AS_JOYSTICK, "0");
 
@@ -128,7 +120,6 @@ CIrrDeviceSFML::CIrrDeviceSFML(const SIrrlichtCreationParameters& param)
 		[[NSUserDefaults standardUserDefaults] setBool: YES
 							   forKey: @"AppleMomentumScrollSupported"];
 #endif
-	}
 
 	core::stringc sfmlversion = "SFML Version ";
 	sfmlversion += SFML_VERSION_MAJOR;
@@ -138,10 +129,7 @@ CIrrDeviceSFML::CIrrDeviceSFML(const SIrrlichtCreationParameters& param)
 	sfmlversion += SFML_VERSION_PATCH;
 
 	Operator = new COSOperator(sfmlversion, this);
-	if ( SFMLDeviceInstances == 1 )
-	{
-		os::Printer::log(sfmlversion.c_str(), ELL_INFORMATION);
-	}
+	os::Printer::log(sfmlversion.c_str(), ELL_INFORMATION);
 
 	// create keymap
 	createKeyMap();
@@ -194,21 +182,10 @@ CIrrDeviceSFML::~CIrrDeviceSFML()
 //~ #endif
 	//~ }
 
-	//~ if (Context)
-	//~ {
-		//~ SDL_GL_DeleteContext(Context);
-		//~ Context = NULL;
-	//~ }
-
-	//~ if (Window)
-	//~ {
-		//~ SDL_DestroyWindow(Window);
-		//~ Window = NULL;
-	//~ }
-
-	if (--SFMLDeviceInstances == 0)
+	if (Window)
 	{
-		//~ SDL_Quit();
+		delete Window;
+		Window = NULL;
 	}
 }
 
@@ -442,13 +419,6 @@ bool CIrrDeviceSFML::createWindowWithContext()
 
 	Window = new sf::Window(videoMode, "", sfmlStyle, ContextSettings);
 	
-	if (CreationParams.DriverType == video::EDT_OPENGL ||
-		CreationParams.DriverType == video::EDT_OGLES2 ||
-		CreationParams.DriverType == video::EDT_OGLES1)
-	{
-		//~ Context = new sf::Context(...);
-	}
-	
 	if (!Window || !Window->isOpen())
 	{
 		if (Window)
@@ -465,11 +435,7 @@ bool CIrrDeviceSFML::createWindowWithContext()
 			
 			Window = new sf::Window(videoMode, "", sfmlStyle, ContextSettings);
 			
-			if (Window && Window->isOpen())
-			{
-				//~ Context = new sf::Context(...);
-			}
-			else
+			if (!Window || !Window->isOpen())
 			{
 				if (Window)
 				{
@@ -555,14 +521,14 @@ void CIrrDeviceSFML::setCursorVisible(bool visible)
 #else
 	if (visible)
 	{
-		//~ SDL_ShowCursor(SDL_ENABLE);
+		Window->setMouseCursorVisible(true);
 //#if defined(_IRR_OSX_PLATFORM_)
 //		NSApp.presentationOptions &= ~NSApplicationPresentationDisableCursorLocationAssistance;
 //#endif
 	}
 	else
 	{
-		//~ SDL_ShowCursor(SDL_DISABLE);
+		Window->setMouseCursorVisible(false);
 //#if defined(_IRR_OSX_PLATFORM_)
 //		NSApp.presentationOptions |= NSApplicationPresentationDisableCursorLocationAssistance;
 //#endif
@@ -910,6 +876,9 @@ bool CIrrDeviceSFML::run()
 						MouseButtonStates &= ~irr::EMBSM_MIDDLE;
 					}
 					break;
+
+				default:
+					break;
 				}
 
 				irrevent.MouseInput.ButtonStates = MouseButtonStates;
@@ -1040,41 +1009,28 @@ bool CIrrDeviceSFML::run()
 			}
 			break;
 
-		//~ case SDL_TEXTEDITING:
-			//~ {
-				//~ irrevent.EventType = irr::EET_SDL_TEXT_EVENT;
-				//~ irrevent.SDLTextEvent.Type = irr::ESDLET_TEXTEDITING;
-				//~ const size_t size = sizeof(irrevent.SDLTextEvent.Text);
-				//~ const size_t other_size = sizeof(SDL_event.edit.text);
-				//~ static_assert(sizeof(size) == sizeof(other_size), "Wrong size");
-				//~ memcpy(irrevent.SDLTextEvent.Text, SDL_event.edit.text, size);
-				//~ irrevent.SDLTextEvent.Start = SDL_event.edit.start;
-				//~ irrevent.SDLTextEvent.Length = SDL_event.edit.length;
-				//~ postEventFromUser(irrevent);
-			//~ }
-			//~ break;
-
-		//~ case SDL_TEXTINPUT:
-			//~ {
-				//~ irrevent.EventType = irr::EET_SDL_TEXT_EVENT;
-				//~ irrevent.SDLTextEvent.Type = irr::ESDLET_TEXTINPUT;
-				//~ const size_t size = sizeof(irrevent.SDLTextEvent.Text);
-				//~ const size_t other_size = sizeof(SDL_event.text.text);
-				//~ static_assert(sizeof(size) == sizeof(other_size), "Wrong size");
-				//~ memcpy(irrevent.SDLTextEvent.Text, SDL_event.text.text, size);
-				//~ irrevent.SDLTextEvent.Start = 0;
-				//~ irrevent.SDLTextEvent.Length = 0;
-				//~ postEventFromUser(irrevent);
-			//~ }
-			//~ break;
-
-		//~ case SDL_USEREVENT:
-			//~ irrevent.EventType = irr::EET_USER_EVENT;
-			//~ irrevent.UserEvent.UserData1 = reinterpret_cast<uintptr_t>(SDL_event.user.data1);
-			//~ irrevent.UserEvent.UserData2 = reinterpret_cast<uintptr_t>(SDL_event.user.data2);
-
-			//~ postEventFromUser(irrevent);
-			//~ break;
+		case sf::Event::TextEntered:
+		    {
+		        irrevent.EventType = irr::EET_SDL_TEXT_EVENT;
+		        irrevent.SDLTextEvent.Type = irr::ESDLET_TEXTINPUT;
+		        
+		        sf::Uint32 unicode = sfml_event.text.unicode;
+		        sf::String unicodeStr(unicode);
+		        std::basic_string<sf::Uint8> utf8_raw = unicodeStr.toUtf8();
+		        std::string utf8(utf8_raw.begin(), utf8_raw.end());
+		        
+		        const size_t size = sizeof(irrevent.SDLTextEvent.Text);
+		        memset(irrevent.SDLTextEvent.Text, 0, size);
+		        
+		        if (utf8.length() < size) {
+		            memcpy(irrevent.SDLTextEvent.Text, utf8.c_str(), utf8.length());
+		        }
+		        
+		        irrevent.SDLTextEvent.Start = 0;
+		        irrevent.SDLTextEvent.Length = 0;
+		        postEventFromUser(irrevent);
+		    }
+		    break;
 
 		default:
 			break;
@@ -1288,77 +1244,7 @@ void CIrrDeviceSFML::setWindowCaption(const wchar_t* text)
 //! presents a surface in the client area
 bool CIrrDeviceSFML::present(video::IImage* surface, void* windowId, core::rect<s32>* srcClip)
 {
-	//~ SDL_Surface *sdlSurface = SDL_CreateRGBSurfaceFrom(
-			//~ surface->getData(), surface->getDimension().Width, surface->getDimension().Height,
-			//~ surface->getBitsPerPixel(), surface->getPitch(),
-			//~ surface->getRedMask(), surface->getGreenMask(), surface->getBlueMask(), surface->getAlphaMask());
-	//~ if (!sdlSurface)
-		//~ return false;
-	//~ SDL_SetSurfaceAlphaMod(sdlSurface, 0);
-	//~ SDL_SetColorKey(sdlSurface, 0, 0);
-	//~ sdlSurface->format->BitsPerPixel=surface->getBitsPerPixel();
-	//~ sdlSurface->format->BytesPerPixel=surface->getBytesPerPixel();
-	//~ if ((surface->getColorFormat()==video::ECF_R8G8B8) ||
-			//~ (surface->getColorFormat()==video::ECF_A8R8G8B8))
-	//~ {
-		//~ sdlSurface->format->Rloss=0;
-		//~ sdlSurface->format->Gloss=0;
-		//~ sdlSurface->format->Bloss=0;
-		//~ sdlSurface->format->Rshift=16;
-		//~ sdlSurface->format->Gshift=8;
-		//~ sdlSurface->format->Bshift=0;
-		//~ if (surface->getColorFormat()==video::ECF_R8G8B8)
-		//~ {
-			//~ sdlSurface->format->Aloss=8;
-			//~ sdlSurface->format->Ashift=32;
-		//~ }
-		//~ else
-		//~ {
-			//~ sdlSurface->format->Aloss=0;
-			//~ sdlSurface->format->Ashift=24;
-		//~ }
-	//~ }
-	//~ else if (surface->getColorFormat()==video::ECF_R5G6B5)
-	//~ {
-		//~ sdlSurface->format->Rloss=3;
-		//~ sdlSurface->format->Gloss=2;
-		//~ sdlSurface->format->Bloss=3;
-		//~ sdlSurface->format->Aloss=8;
-		//~ sdlSurface->format->Rshift=11;
-		//~ sdlSurface->format->Gshift=5;
-		//~ sdlSurface->format->Bshift=0;
-		//~ sdlSurface->format->Ashift=16;
-	//~ }
-	//~ else if (surface->getColorFormat()==video::ECF_A1R5G5B5)
-	//~ {
-		//~ sdlSurface->format->Rloss=3;
-		//~ sdlSurface->format->Gloss=3;
-		//~ sdlSurface->format->Bloss=3;
-		//~ sdlSurface->format->Aloss=7;
-		//~ sdlSurface->format->Rshift=10;
-		//~ sdlSurface->format->Gshift=5;
-		//~ sdlSurface->format->Bshift=0;
-		//~ sdlSurface->format->Ashift=15;
-	//~ }
-
-	//~ SDL_Surface* scr = (SDL_Surface*)windowId;
-	//~ if (scr)
-	//~ {
-		//~ if (srcClip)
-		//~ {
-			//~ SDL_Rect sdlsrcClip;
-			//~ sdlsrcClip.x = srcClip->UpperLeftCorner.X;
-			//~ sdlsrcClip.y = srcClip->UpperLeftCorner.Y;
-			//~ sdlsrcClip.w = srcClip->getWidth();
-			//~ sdlsrcClip.h = srcClip->getHeight();
-			//~ SDL_BlitSurface(sdlSurface, &sdlsrcClip, scr, NULL);
-		//~ }
-		//~ else
-			//~ SDL_BlitSurface(sdlSurface, NULL, scr, NULL);
-	//~ }
-
-	//~ SDL_FreeSurface(sdlSurface);
-	//~ return (scr != 0);
+	return false;
 }
 
 
@@ -1426,9 +1312,9 @@ void CIrrDeviceSFML::maximizeWindow()
 //! Get the position of this window on screen
 core::position2di CIrrDeviceSFML::getWindowPosition()
 {
-	int x = -1;
-	int y = -1;
-	//~ SDL_GetWindowPosition(Window, &x, &y);
+	sf::Vector2i position = Window->getPosition();
+	int x = position.x;
+	int y = position.y;
 
 	return core::position2di(x, y);
 }
@@ -1470,19 +1356,12 @@ bool CIrrDeviceSFML::isWindowMinimized() const
 //! Set the current Gamma Value for the Display
 bool CIrrDeviceSFML::setGammaRamp( f32 red, f32 green, f32 blue, f32 brightness, f32 contrast )
 {
-	//~ /*
-	//~ // todo: Gamma in SDL takes ints, what does Irrlicht use?
-	//~ return (SDL_SetGamma(red, green, blue) != -1);
-	//~ */
 	return false;
 }
 
 //! Get the current Gamma Value for the Display
 bool CIrrDeviceSFML::getGammaRamp( f32 &red, f32 &green, f32 &blue, f32 &brightness, f32 &contrast )
 {
-//~ /*	brightness = 0.f;
-	//~ contrast = 0.f;
-	//~ return (SDL_GetGamma(&red, &green, &blue) != -1);*/
 	return false;
 }
 
@@ -1490,37 +1369,39 @@ bool CIrrDeviceSFML::getGammaRamp( f32 &red, f32 &green, f32 &blue, f32 &brightn
 //! \return Returns empty string on failure.
 const c8* CIrrDeviceSFML::getTextFromClipboard() const
 {
-	//~ return SDL_GetClipboardText();
+	static std::string str;
+	str = sf::Clipboard::getString().toAnsiString();
+	return str.c_str();
 }
 
 //! copies text to the clipboard
 void CIrrDeviceSFML::copyToClipboard(const c8* text) const
 {
-	//~ SDL_SetClipboardText(text);
+	sf::Clipboard::setString(text);
 }
 
 //! returns color format of the window.
 video::ECOLOR_FORMAT CIrrDeviceSFML::getColorFormat() const
 {
-	//~ if (Window)
-	//~ {
-		//~ u32 pixel_format = SDL_GetWindowPixelFormat(Window);
-		//~ if (SDL_BITSPERPIXEL(pixel_format) == 16)
-		//~ {
-			//~ if (SDL_ISPIXELFORMAT_ALPHA(pixel_format))
-				//~ return video::ECF_A1R5G5B5;
-			//~ else
-				//~ return video::ECF_R5G6B5;
-		//~ }
-		//~ else
-		//~ {
-			//~ if (SDL_ISPIXELFORMAT_ALPHA(pixel_format))
-				//~ return video::ECF_A8R8G8B8;
-			//~ else
-				//~ return video::ECF_R8G8B8;
-		//~ }
-	//~ }
-	//~ else
+	if (Window)
+	{
+		sf::VideoMode desktop = sf::VideoMode::getDesktopMode();
+		u32 bitsPerPixel = desktop.bitsPerPixel;
+		
+		if (bitsPerPixel == 16)
+		{
+			return video::ECF_R5G6B5;
+		}
+		else if (bitsPerPixel == 24)
+		{
+			return video::ECF_R8G8B8;
+		}
+		else // 32-bit
+		{
+			return video::ECF_A8R8G8B8;
+		}
+	}
+	else
 		return CIrrDeviceStub::getColorFormat();
 }
 

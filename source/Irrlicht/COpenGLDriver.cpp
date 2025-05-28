@@ -85,7 +85,6 @@ COpenGLDriver::COpenGLDriver(const SIrrlichtCreationParameters& params, io::IFil
 #endif
 
 	ExposedData.OpenGLSFML.Window = device->getWindow();
-	ExposedData.OpenGLSFML.Context = device->getContext();
 
 	genericDriverInit();
 }

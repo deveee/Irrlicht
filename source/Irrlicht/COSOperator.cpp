@@ -25,6 +25,9 @@
 #if defined(_IRR_COMPILE_WITH_SDL_DEVICE_)
 #include "CIrrDeviceSDL.h"
 #endif
+#if defined(_IRR_COMPILE_WITH_SFML_DEVICE_)
+#include "CIrrDeviceSFML.h"
+#endif
 #if defined(_IRR_COMPILE_WITH_OSX_DEVICE_)
 #import <Cocoa/Cocoa.h>
 #endif
@@ -63,7 +66,7 @@ void COSOperator::copyToClipboard(const c8* text) const
 	if (strlen(text)==0)
 		return;
 
-#if defined(_IRR_COMPILE_WITH_X11_DEVICE_) || defined(_IRR_COMPILE_WITH_SDL_DEVICE_)
+#if defined(_IRR_COMPILE_WITH_X11_DEVICE_) || defined(_IRR_COMPILE_WITH_SDL_DEVICE_) || defined(_IRR_COMPILE_WITH_SFML_DEVICE_)
 	if ( IrrDevice )
 	{
 #if defined(_IRR_COMPILE_WITH_X11_DEVICE_)
@@ -73,6 +76,10 @@ void COSOperator::copyToClipboard(const c8* text) const
 #if defined(_IRR_COMPILE_WITH_SDL_DEVICE_)
 		if ( IrrDevice->getType() == EIDT_SDL )
 			((CIrrDeviceSDL*)IrrDevice)->copyToClipboard(text);
+#endif
+#if defined(_IRR_COMPILE_WITH_SFML_DEVICE_)
+		if ( IrrDevice->getType() == EIDT_SFML )
+			((CIrrDeviceSFML*)IrrDevice)->copyToClipboard(text);
 #endif
 		return;
 	}
@@ -118,7 +125,7 @@ void COSOperator::copyToClipboard(const c8* text) const
 //! \return Returns 0 if no string is in there.
 const c8* COSOperator::getTextFromClipboard() const
 {
-#if defined(_IRR_COMPILE_WITH_X11_DEVICE_) || defined(_IRR_COMPILE_WITH_SDL_DEVICE_)
+#if defined(_IRR_COMPILE_WITH_X11_DEVICE_) || defined(_IRR_COMPILE_WITH_SDL_DEVICE_) || defined(_IRR_COMPILE_WITH_SFML_DEVICE_)
 	if ( IrrDevice )
 	{
 #if defined(_IRR_COMPILE_WITH_X11_DEVICE_)
@@ -128,6 +135,10 @@ const c8* COSOperator::getTextFromClipboard() const
 #if defined(_IRR_COMPILE_WITH_SDL_DEVICE_)
 		if ( IrrDevice->getType() == EIDT_SDL )
 			return ((CIrrDeviceSDL*)IrrDevice)->getTextFromClipboard();
+#endif
+#if defined(_IRR_COMPILE_WITH_SFML_DEVICE_)
+		if ( IrrDevice->getType() == EIDT_SFML )
+			return ((CIrrDeviceSFML*)IrrDevice)->getTextFromClipboard();
 #endif
 
 		return 0;

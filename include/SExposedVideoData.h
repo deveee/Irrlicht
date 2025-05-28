@@ -9,7 +9,6 @@
 #include <SDL.h>
 #endif
 #ifdef _IRR_COMPILE_WITH_SFML_DEVICE_
-#include <SFML/Window/Context.hpp>
 #include <SFML/Window/Window.hpp>
 #endif
 
@@ -124,9 +123,6 @@ struct SExposedVideoData
 	{
 		//! The SFML window object.
 		sf::Window* Window;
-		
-		//! The SFML OpenGL context object.
-		sf::Context* Context;
 	};
 #endif
 

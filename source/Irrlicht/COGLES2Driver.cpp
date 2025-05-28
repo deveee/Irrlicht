@@ -126,7 +126,6 @@ COGLES2Driver::COGLES2Driver(const SIrrlichtCreationParameters& params, io::IFil
 #endif
 
 	ExposedData.OpenGLSFML.Window = device->getWindow();
-	ExposedData.OpenGLSFML.Context = device->getContext();
 }
 
 #endif

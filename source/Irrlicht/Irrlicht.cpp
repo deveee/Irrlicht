@@ -102,14 +102,14 @@ namespace irr
 			dev = new CIrrDeviceAndroid(params);
 #endif
 
-#ifdef _IRR_COMPILE_WITH_SFML_DEVICE_
-		if (params.DeviceType == EIDT_SFML || (!dev && params.DeviceType == EIDT_BEST))
-			dev = new CIrrDeviceSFML(params);
-#endif
-
 #ifdef _IRR_COMPILE_WITH_SDL_DEVICE_
 		if (params.DeviceType == EIDT_SDL || (!dev && params.DeviceType == EIDT_BEST))
 			dev = new CIrrDeviceSDL(params);
+#endif
+
+#ifdef _IRR_COMPILE_WITH_SFML_DEVICE_
+		if (params.DeviceType == EIDT_SFML || (!dev && params.DeviceType == EIDT_BEST))
+			dev = new CIrrDeviceSFML(params);
 #endif
 
 #ifdef _IRR_COMPILE_WITH_FB_DEVICE_

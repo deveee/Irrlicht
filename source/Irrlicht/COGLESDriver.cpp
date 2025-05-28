@@ -95,7 +95,6 @@ COGLES1Driver::COGLES1Driver(const SIrrlichtCreationParameters& params, io::IFil
 #endif
 
 	ExposedData.OpenGLSFML.Window = device->getWindow();
-	ExposedData.OpenGLSFML.Context = device->getContext();
 }
 
 #endif
