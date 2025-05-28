@@ -17,6 +17,7 @@
 #include "IImagePresenter.h"
 #include "ICursorControl.h"
 
+#include <SFML/System/Sleep.hpp>
 #include <SFML/Window/Context.hpp>
 #include <SFML/Window/Event.hpp>
 #include <SFML/Window/Window.hpp>
@@ -311,17 +312,17 @@ namespace irr
 		struct SKeyMap
 		{
 			SKeyMap() {}
-			//~ SKeyMap(SDL_Scancode scancode, s32 irrKeycode)
-				//~ : Scancode(scancode), IrrKeycode(irrKeycode)
-			//~ {
-			//~ }
-
-			//~ SDL_Scancode Scancode;
+			SKeyMap(sf::Keyboard::Key key, s32 irrKeycode)
+				: Key(key), IrrKeycode(irrKeycode)
+			{
+			}
+			
+			sf::Keyboard::Key Key;
 			s32 IrrKeycode;
-
+			
 			bool operator<(const SKeyMap& o) const
 			{
-				//~ return Scancode<o.Scancode;
+				return Key < o.Key;
 			}
 		};
 

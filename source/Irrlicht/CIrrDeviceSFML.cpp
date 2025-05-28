@@ -936,40 +936,33 @@ bool CIrrDeviceSFML::run()
 			}
 			break;
 
-		//~ case SDL_KEYDOWN:
-		//~ case SDL_KEYUP:
-			//~ {
-				//~ SDL_Scancode scancode = SDL_GetScancodeFromKey(SDL_event.key.keysym.sym);
-
-				//~ SKeyMap mp;
-				//~ mp.Scancode = scancode;
-				//~ s32 idx = KeyMap.binary_search(mp);
-
-				//~ if (idx == -1)
-				//~ {
-					//~ mp.Scancode = SDL_event.key.keysym.scancode;
-					//~ idx = KeyMap.binary_search(mp);
-				//~ }
-
-				//~ EKEY_CODE key;
-				//~ if (idx == -1)
-					//~ key = (EKEY_CODE)0;
-				//~ else
-					//~ key = (EKEY_CODE)KeyMap[idx].IrrKeycode;
-
-				//~ irrevent.EventType = irr::EET_KEY_INPUT_EVENT;
-				//~ irrevent.KeyInput.Char = 0;
-				//~ irrevent.KeyInput.Key = key;
-				//~ irrevent.KeyInput.PressedDown = (SDL_event.type == SDL_KEYDOWN);
-				//~ irrevent.KeyInput.Shift = (SDL_event.key.keysym.mod & KMOD_SHIFT) != 0;
-//~ #if defined(_IRR_IOS_PLATFORM_) || defined(_IRR_OSX_PLATFORM_)
-				//~ irrevent.KeyInput.Control = (SDL_event.key.keysym.mod & KMOD_GUI) != 0;
-//~ #else
-				//~ irrevent.KeyInput.Control = (SDL_event.key.keysym.mod & KMOD_CTRL) != 0;
-//~ #endif
-				//~ postEventFromUser(irrevent);
-			//~ }
-			//~ break;
+		case sf::Event::KeyPressed:
+		case sf::Event::KeyReleased:
+			{
+				sf::Keyboard::Key key = sfml_event.key.code;
+				SKeyMap mp;
+				mp.Key = key;
+				s32 idx = KeyMap.binary_search(mp);
+				
+				EKEY_CODE keyCode;
+				if (idx == -1)
+					keyCode = (EKEY_CODE)0;
+				else
+					keyCode = (EKEY_CODE)KeyMap[idx].IrrKeycode;
+				
+				irrevent.EventType = irr::EET_KEY_INPUT_EVENT;
+				irrevent.KeyInput.Char = 0;
+				irrevent.KeyInput.Key = keyCode;
+				irrevent.KeyInput.PressedDown = (sfml_event.type == sf::Event::KeyPressed);
+				irrevent.KeyInput.Shift = sfml_event.key.shift;
+#if defined(_IRR_IOS_PLATFORM_) || defined(_IRR_OSX_PLATFORM_)
+				irrevent.KeyInput.Control = sfml_event.key.system;
+#else
+				irrevent.KeyInput.Control = sfml_event.key.control;
+#endif
+				postEventFromUser(irrevent);
+			}
+			break;
 
 //~ #if defined(_IRR_COMPILE_WITH_SDL_GAMECONTROLLER)
 		//~ case SDL_CONTROLLERBUTTONDOWN:
@@ -1019,50 +1012,33 @@ bool CIrrDeviceSFML::run()
 		case sf::Event::Closed:
 			Close = true;
 			return false;
-
-		//~ case SDL_WINDOWEVENT:
-			//~ {
-				//~ if (SDL_event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED)
-				//~ {
-					//~ updateNativeScale();
-
-					//~ u32 new_width = roundf((float)SDL_event.window.data1 * NativeScaleX);
-					//~ u32 new_height = roundf((float)SDL_event.window.data2 * NativeScaleY);
-
-					//~ if (new_width != Width || new_height != Height)
-					//~ {
-						//~ Width = new_width;
-						//~ Height = new_height;
-
-						//~ if (VideoDriver)
-							//~ VideoDriver->OnResize(core::dimension2d<u32>(Width, Height));
-					//~ }
-				//~ }
-				//~ else if (SDL_event.window.event == SDL_WINDOWEVENT_MINIMIZED)
-				//~ {
-					//~ WindowMinimized = true;
-				//~ }
-				//~ else if (SDL_event.window.event == SDL_WINDOWEVENT_MAXIMIZED)
-				//~ {
-					//~ WindowMinimized = false;
-				//~ }
-				//~ else if (SDL_event.window.event == SDL_WINDOWEVENT_RESTORED)
-				//~ {
-					//~ WindowMinimized = false;
-				//~ }
-				//~ else if (SDL_event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED)
-				//~ {
-					//~ WindowHasFocus = true;
-				//~ }
-				//~ else if (SDL_event.window.event == SDL_WINDOWEVENT_FOCUS_LOST)
-				//~ {
-					//~ WindowHasFocus = false;
-				//~ }
-				//~ else if (SDL_event.window.event == SDL_WINDOWEVENT_MOVED)
-				//~ {
-				//~ }
-			//~ }
-			//~ break;
+			
+		case sf::Event::Resized:
+			{
+				updateNativeScale();
+				u32 new_width = roundf((float)sfml_event.size.width * NativeScaleX);
+				u32 new_height = roundf((float)sfml_event.size.height * NativeScaleY);
+				if (new_width != Width || new_height != Height)
+				{
+					Width = new_width;
+					Height = new_height;
+					if (VideoDriver)
+						VideoDriver->OnResize(core::dimension2d<u32>(Width, Height));
+				}
+			}
+			break;
+			
+		case sf::Event::GainedFocus:
+			{
+				WindowHasFocus = true;
+			}
+			break;
+		
+		case sf::Event::LostFocus:
+			{
+				WindowHasFocus = false;
+			}
+			break;
 
 		//~ case SDL_TEXTEDITING:
 			//~ {
@@ -1280,34 +1256,32 @@ bool CIrrDeviceSFML::activateJoysticks(core::array<SJoystickInfo> & joystickInfo
 //! pause execution temporarily
 void CIrrDeviceSFML::yield()
 {
-	//~ SDL_Delay(0);
+	sf::sleep(sf::milliseconds(0));
 }
 
 
 //! pause execution for a specified time
 void CIrrDeviceSFML::sleep(u32 timeMs, bool pauseTimer)
 {
-	//~ const bool wasStopped = Timer ? Timer->isStopped() : true;
-	//~ if (pauseTimer && !wasStopped)
-		//~ Timer->stop();
-
-	//~ SDL_Delay(timeMs);
-
-	//~ if (pauseTimer && !wasStopped)
-		//~ Timer->start();
+	const bool wasStopped = Timer ? Timer->isStopped() : true;
+	if (pauseTimer && !wasStopped)
+		Timer->stop();
+		
+	sf::sleep(sf::milliseconds(timeMs));
+	
+	if (pauseTimer && !wasStopped)
+		Timer->start();
 }
 
 
 //! sets the caption of the window
 void CIrrDeviceSFML::setWindowCaption(const wchar_t* text)
 {
-	//~ size_t length = wcslen(text);
-	//~ char* textc = new char[length * sizeof(wchar_t) + 1]();
-	//~ irr::core::wcharToUtf8(text, textc, length * sizeof(wchar_t) + 1);
-
-	//~ SDL_SetWindowTitle(Window, textc);
-
-	//~ delete[] textc;
+	size_t length = wcslen(text);
+	char* textc = new char[length * sizeof(wchar_t) + 1]();
+	irr::core::wcharToUtf8(text, textc, length * sizeof(wchar_t) + 1);
+	Window->setTitle(textc);
+	delete[] textc;
 }
 
 
@@ -1398,39 +1372,29 @@ void CIrrDeviceSFML::closeDevice()
 //! \return Pointer to a list with all video modes supported
 video::IVideoModeList* CIrrDeviceSFML::getVideoModeList()
 {
-	//~ if (!VideoModeList->getVideoModeCount())
-	//~ {
-		//~ // enumerate video modes.
-		//~ int display_count = 0;
-		//~ if ((display_count = SDL_GetNumVideoDisplays()) < 1)
-		//~ {
-			//~ os::Printer::log("No display created: ", SDL_GetError(), ELL_ERROR);
-			//~ return VideoModeList;
-		//~ }
-
-		//~ int mode_count = 0;
-		//~ if ((mode_count = SDL_GetNumDisplayModes(0)) < 1)
-		//~ {
-			//~ os::Printer::log("No display modes available: ", SDL_GetError(), ELL_ERROR);
-			//~ return VideoModeList;
-		//~ }
-
-		//~ SDL_DisplayMode mode = { SDL_PIXELFORMAT_UNKNOWN, 0, 0, 0, 0 };
-		//~ if (SDL_GetDesktopDisplayMode(0, &mode) == 0)
-		//~ {
-			//~ VideoModeList->setDesktop(SDL_BITSPERPIXEL(mode.format),
-				//~ core::dimension2d<u32>(mode.w, mode.h));
-		//~ }
-
-		//~ for (int i = 0; i < mode_count; i++)
-		//~ {
-			//~ if (SDL_GetDisplayMode(0, i, &mode) == 0)
-			//~ {
-				//~ VideoModeList->addMode(core::dimension2d<u32>(mode.w, mode.h),
-					//~ SDL_BITSPERPIXEL(mode.format));
-			//~ }
-		//~ }
-	//~ }
+	if (!VideoModeList->getVideoModeCount())
+	{
+		std::vector<sf::VideoMode> modes = sf::VideoMode::getFullscreenModes();
+		
+		if (modes.empty())
+		{
+			os::Printer::log("No display modes available", ELL_ERROR);
+			return VideoModeList;
+		}
+		
+		sf::VideoMode desktopMode = sf::VideoMode::getDesktopMode();
+		VideoModeList->setDesktop(desktopMode.bitsPerPixel,
+			core::dimension2d<u32>(desktopMode.width, desktopMode.height));
+		
+		for (const sf::VideoMode& mode : modes)
+		{
+			if (mode.isValid())
+			{
+				VideoModeList->addMode(core::dimension2d<u32>(mode.width, mode.height),
+					mode.bitsPerPixel);
+			}
+		}
+	}
 
 	return VideoModeList;
 }
@@ -1565,142 +1529,110 @@ void CIrrDeviceSFML::createKeyMap()
 {
 	KeyMap.reallocate(136);
 
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_BACKSPACE, KEY_BACK));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_TAB, KEY_TAB));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_CLEAR, KEY_CLEAR));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_RETURN, KEY_RETURN));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_PAUSE, KEY_PAUSE));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_CAPSLOCK, KEY_CAPITAL));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_ESCAPE, KEY_ESCAPE));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_SPACE, KEY_SPACE));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_PAGEUP, KEY_PRIOR));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_PAGEDOWN, KEY_NEXT));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_END, KEY_END));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_HOME, KEY_HOME));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_LEFT, KEY_LEFT));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_UP, KEY_UP));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_RIGHT, KEY_RIGHT));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_DOWN, KEY_DOWN));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_SELECT, KEY_SELECT));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_PRINTSCREEN, KEY_PRINT)); // KEY_SNAPSHOT?
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_EXECUTE, KEY_EXECUT));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_INSERT, KEY_INSERT));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_DELETE, KEY_DELETE));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_HELP, KEY_HELP));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_0, KEY_KEY_0));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_1, KEY_KEY_1));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_2, KEY_KEY_2));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_3, KEY_KEY_3));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_4, KEY_KEY_4));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_5, KEY_KEY_5));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_6, KEY_KEY_6));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_7, KEY_KEY_7));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_8, KEY_KEY_8));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_9, KEY_KEY_9));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_A, KEY_KEY_A));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_B, KEY_KEY_B));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_C, KEY_KEY_C));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_D, KEY_KEY_D));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_E, KEY_KEY_E));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_F, KEY_KEY_F));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_G, KEY_KEY_G));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_H, KEY_KEY_H));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_I, KEY_KEY_I));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_J, KEY_KEY_J));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_K, KEY_KEY_K));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_L, KEY_KEY_L));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_M, KEY_KEY_M));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_N, KEY_KEY_N));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_O, KEY_KEY_O));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_P, KEY_KEY_P));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_Q, KEY_KEY_Q));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_R, KEY_KEY_R));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_S, KEY_KEY_S));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_T, KEY_KEY_T));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_U, KEY_KEY_U));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_V, KEY_KEY_V));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_W, KEY_KEY_W));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_X, KEY_KEY_X));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_Y, KEY_KEY_Y));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_Z, KEY_KEY_Z));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_LGUI, KEY_LWIN));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_RGUI, KEY_RWIN));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_APPLICATION, KEY_APPS));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_POWER, KEY_SLEEP));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_SLEEP, KEY_SLEEP));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_KP_0, KEY_NUMPAD0));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_KP_1, KEY_NUMPAD1));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_KP_2, KEY_NUMPAD2));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_KP_3, KEY_NUMPAD3));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_KP_4, KEY_NUMPAD4));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_KP_5, KEY_NUMPAD5));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_KP_6, KEY_NUMPAD6));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_KP_7, KEY_NUMPAD7));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_KP_8, KEY_NUMPAD8));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_KP_9, KEY_NUMPAD9));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_KP_MULTIPLY, KEY_MULTIPLY));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_KP_PERIOD, KEY_PERIOD));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_KP_DECIMAL, KEY_DECIMAL));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_KP_PLUS, KEY_ADD));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_KP_MINUS, KEY_SUBTRACT));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_KP_DIVIDE, KEY_DIVIDE));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_KP_ENTER, KEY_RETURN));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_SEPARATOR, KEY_SEPARATOR));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_PERIOD, KEY_PERIOD));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_F1,  KEY_F1));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_F2,  KEY_F2));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_F3,  KEY_F3));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_F4,  KEY_F4));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_F5,  KEY_F5));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_F6,  KEY_F6));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_F7,  KEY_F7));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_F8,  KEY_F8));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_F9,  KEY_F9));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_F10, KEY_F10));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_F11, KEY_F11));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_F12, KEY_F12));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_F13, KEY_F13));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_F14, KEY_F14));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_F15, KEY_F15));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_F16, KEY_F16));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_F17, KEY_F17));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_F18, KEY_F18));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_F19, KEY_F19));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_F20, KEY_F20));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_F21, KEY_F21));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_F22, KEY_F22));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_F23, KEY_F23));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_F24, KEY_F24));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_NUMLOCKCLEAR, KEY_NUMLOCK));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_SCROLLLOCK, KEY_SCROLL));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_LSHIFT, KEY_LSHIFT));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_RSHIFT, KEY_RSHIFT));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_LCTRL,  KEY_LCONTROL));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_RCTRL,  KEY_RCONTROL));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_LALT,  KEY_LMENU));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_RALT,  KEY_RMENU));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_MENU,  KEY_MENU));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_COMMA,  KEY_COMMA));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_MINUS,  KEY_MINUS));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_AC_BACK, KEY_ESCAPE));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_EQUALS, KEY_PLUS));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_SEMICOLON, KEY_OEM_1));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_SLASH, KEY_OEM_2));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_GRAVE, KEY_OEM_3));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_LEFTBRACKET, KEY_OEM_4));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_BACKSLASH, KEY_OEM_5));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_RIGHTBRACKET, KEY_OEM_6));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_APOSTROPHE, KEY_OEM_7));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_CRSEL, KEY_CRSEL));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_EXSEL, KEY_EXSEL));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_AUDIONEXT, KEY_MEDIA_NEXT_TRACK));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_AUDIOPREV, KEY_MEDIA_PREV_TRACK));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_AUDIOSTOP, KEY_MEDIA_STOP));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_AUDIOPLAY, KEY_MEDIA_PLAY_PAUSE));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_AUDIOMUTE, KEY_VOLUME_MUTE));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_VOLUMEDOWN, KEY_VOLUME_DOWN));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_VOLUMEUP, KEY_VOLUME_UP));
-	//~ KeyMap.push_back(SKeyMap(SDL_SCANCODE_WWW, KEY_BROWSER_HOME));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::BackSpace, KEY_BACK));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Tab, KEY_TAB));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Enter, KEY_RETURN));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Pause, KEY_PAUSE));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Escape, KEY_ESCAPE));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Space, KEY_SPACE));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::PageUp, KEY_PRIOR));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::PageDown, KEY_NEXT));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::End, KEY_END));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Home, KEY_HOME));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Left, KEY_LEFT));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Up, KEY_UP));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Right, KEY_RIGHT));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Down, KEY_DOWN));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Insert, KEY_INSERT));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Delete, KEY_DELETE));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Num0, KEY_KEY_0));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Num1, KEY_KEY_1));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Num2, KEY_KEY_2));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Num3, KEY_KEY_3));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Num4, KEY_KEY_4));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Num5, KEY_KEY_5));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Num6, KEY_KEY_6));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Num7, KEY_KEY_7));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Num8, KEY_KEY_8));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Num9, KEY_KEY_9));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::A, KEY_KEY_A));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::B, KEY_KEY_B));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::C, KEY_KEY_C));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::D, KEY_KEY_D));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::E, KEY_KEY_E));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::F, KEY_KEY_F));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::G, KEY_KEY_G));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::H, KEY_KEY_H));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::I, KEY_KEY_I));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::J, KEY_KEY_J));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::K, KEY_KEY_K));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::L, KEY_KEY_L));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::M, KEY_KEY_M));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::N, KEY_KEY_N));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::O, KEY_KEY_O));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::P, KEY_KEY_P));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Q, KEY_KEY_Q));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::R, KEY_KEY_R));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::S, KEY_KEY_S));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::T, KEY_KEY_T));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::U, KEY_KEY_U));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::V, KEY_KEY_V));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::W, KEY_KEY_W));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::X, KEY_KEY_X));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Y, KEY_KEY_Y));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Z, KEY_KEY_Z));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::LSystem, KEY_LWIN));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::RSystem, KEY_RWIN));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Numpad0, KEY_NUMPAD0));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Numpad1, KEY_NUMPAD1));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Numpad2, KEY_NUMPAD2));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Numpad3, KEY_NUMPAD3));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Numpad4, KEY_NUMPAD4));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Numpad5, KEY_NUMPAD5));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Numpad6, KEY_NUMPAD6));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Numpad7, KEY_NUMPAD7));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Numpad8, KEY_NUMPAD8));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Numpad9, KEY_NUMPAD9));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Multiply, KEY_MULTIPLY));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Period, KEY_PERIOD));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Add, KEY_ADD));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Subtract, KEY_SUBTRACT));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Divide, KEY_DIVIDE));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Enter, KEY_RETURN));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Period, KEY_PERIOD));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::F1,  KEY_F1));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::F2,  KEY_F2));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::F3,  KEY_F3));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::F4,  KEY_F4));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::F5,  KEY_F5));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::F6,  KEY_F6));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::F7,  KEY_F7));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::F8,  KEY_F8));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::F9,  KEY_F9));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::F10, KEY_F10));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::F11, KEY_F11));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::F12, KEY_F12));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::F13, KEY_F13));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::F14, KEY_F14));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::F15, KEY_F15));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::LShift, KEY_LSHIFT));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::RShift, KEY_RSHIFT));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::LControl, KEY_LCONTROL));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::RControl, KEY_RCONTROL));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::LAlt, KEY_LMENU));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::RAlt, KEY_RMENU));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Menu, KEY_MENU));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Comma, KEY_COMMA));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Hyphen, KEY_MINUS));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Escape, KEY_ESCAPE));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Equal, KEY_PLUS));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Semicolon, KEY_OEM_1));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Slash, KEY_OEM_2));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Tilde, KEY_OEM_3));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::LBracket, KEY_OEM_4));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::BackSlash, KEY_OEM_5));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::RBracket, KEY_OEM_6));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Quote, KEY_OEM_7));
 
 	KeyMap.sort();
 }
