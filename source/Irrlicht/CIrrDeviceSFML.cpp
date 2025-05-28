@@ -629,7 +629,7 @@ bool CIrrDeviceSFML::run()
 
 	while (!Close && Window->pollEvent(sfml_event))
 	{
-		// os::Printer::log("event: ", core::stringc((int)SDL_event.type).c_str(), ELL_INFORMATION); // just for debugging
+		// os::Printer::log("event: ", core::stringc((int)sfml_event.type).c_str(), ELL_INFORMATION); // just for debugging
 
 		switch (sfml_event.type)
 		{
