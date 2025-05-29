@@ -179,7 +179,6 @@ bool CIrrDeviceSFML::createWindow()
 			// Shouldn't happen, just in case
 			Width = 640;
 			Height = 480;
-
 		}
 	}
 
