@@ -287,7 +287,6 @@ namespace irr
 		u32 Width, Height;
 
 		bool WindowHasFocus;
-		bool WindowMinimized;
 		bool Resizable;
 
 		s32 AccelerometerIndex;
@@ -305,7 +304,7 @@ namespace irr
 		s32 LongTouchY;
 		bool LongTouchHandled;
 
-		//~ std::set<SDL_FingerID> TouchIDs;
+		std::set<unsigned int> TouchIDs;
 
 		struct SKeyMap
 		{

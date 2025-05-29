@@ -61,7 +61,7 @@ CIrrDeviceSFML::CIrrDeviceSFML(const SIrrlichtCreationParameters& param)
 	Window(0),
 	MouseX(0), MouseY(0), MouseButtonStates(0),
 	Width(param.WindowSize.Width), Height(param.WindowSize.Height),
-	WindowHasFocus(false), WindowMinimized(false),
+	WindowHasFocus(false),
 	Resizable(param.WindowResizable == 1),
 	AccelerometerIndex(-1), AccelerometerInstance(-1),
 	GyroscopeIndex(-1), GyroscopeInstance(-1),
@@ -76,44 +76,6 @@ CIrrDeviceSFML::CIrrDeviceSFML(const SIrrlichtCreationParameters& param)
 #if defined(_IRR_ANDROID_PLATFORM_) || defined(_IRR_IOS_PLATFORM_)
 	ShouldUseRelativeMouse = supportsRelativeMouse();
 #endif
-
-		//~ SDL_SetHint(SDL_HINT_NO_SIGNAL_HANDLERS, "1");
-		//~ SDL_SetHint(SDL_HINT_ACCELEROMETER_AS_JOYSTICK, "0");
-
-		// Disable simulated mouse events
-		//~ SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
-
-		// Enable simulated touch events on Android versions that don't support
-		// relative mouse mode. Disable on other platforms.
-//~ #if defined(_IRR_ANDROID_PLATFORM_) || defined(_IRR_IOS_PLATFORM_)
-		//~ SDL_SetHint(SDL_HINT_MOUSE_TOUCH_EVENTS, ShouldUseRelativeMouse ? "0" : "1");
-//~ #else
-		//~ SDL_SetHint(SDL_HINT_MOUSE_TOUCH_EVENTS, "0");
-//~ #endif
-
-		//~ u32 flags = SDL_INIT_TIMER | SDL_INIT_VIDEO;
-
-//~ #if defined(_IRR_COMPILE_WITH_SDL_GAMECONTROLLER)
-		//~ flags |= SDL_INIT_GAMECONTROLLER;
-//~ #elif defined(_IRR_COMPILE_WITH_JOYSTICK_EVENTS_)
-		//~ flags |= SDL_INIT_JOYSTICK;
-//~ #endif
-
-		// Initialize SDL... Timer for sleep, video for the obvious
-		//~ if (SDL_Init(flags) < 0)
-		//~ {
-			//~ os::Printer::log("Unable to initialize SDL!", SDL_GetError());
-			//~ Close = true;
-		//~ }
-		//~ else
-		//~ {
-			//~ os::Printer::log("SDL initialized", ELL_INFORMATION);
-		//~ }
-
-		//~ if (SDL_InitSubSystem(SDL_INIT_SENSOR) < 0)
-		//~ {
-			//~ os::Printer::log("Failed to init SDL sensor!", SDL_GetError());
-		//~ }
 
 #if defined(_IRR_OSX_PLATFORM_)
 		// Enable AppleMomentumScrollSupported on macOS
@@ -248,18 +210,6 @@ bool CIrrDeviceSFML::createWindow()
 			}
 		}
 
-		if (!success && CreationParams.WithAlphaChannel)
-		{
-			CreationParams.WithAlphaChannel = false;
-
-			success = createWindowWithContext();
-
-			if (success)
-			{
-				os::Printer::log("AlphaChannel disabled due to lack of support!");
-			}
-		}
-
 		if (!success && CreationParams.Stencilbuffer)
 		{
 			CreationParams.Stencilbuffer = false;
@@ -287,49 +237,6 @@ bool CIrrDeviceSFML::createWindow()
 			if (success)
 			{
 				os::Printer::log("Use lower ZBufferBits due to lack of support!");
-			}
-		}
-
-		if (!success && CreationParams.Bits > 16)
-		{
-			while (CreationParams.Bits > 16)
-			{
-				CreationParams.Bits -= 8;
-
-				success = createWindowWithContext();
-
-				if (success)
-					break;
-			}
-
-			if (success)
-			{
-				os::Printer::log("Use lower Bits due to lack of support!");
-			}
-		}
-
-		if (!success && CreationParams.Stereobuffer)
-		{
-			CreationParams.Stereobuffer = false;
-
-			success = createWindowWithContext();
-
-			if (success)
-			{
-				os::Printer::log("Stereobuffer disabled due to lack of support!");
-			}
-		}
-
-		if (!success && CreationParams.Doublebuffer)
-		{
-			// Try single buffer
-			CreationParams.Doublebuffer = 0;
-
-			success = createWindowWithContext();
-
-			if (success)
-			{
-				os::Printer::log("Doublebuffer disabled due to lack of support!");
 			}
 		}
 	}
@@ -382,19 +289,6 @@ bool CIrrDeviceSFML::createWindowWithContext()
 			ContextSettings.minorVersion = 1;
 		}
 
-		//~ if (CreationParams.Bits <= 16)
-		//~ {
-			//~ SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 4);
-			//~ SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 4);
-			//~ SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 4);
-		//~ }
-		//~ else
-		//~ {
-			//~ SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
-			//~ SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
-			//~ SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
-		//~ }
-
 		ContextSettings.depthBits = CreationParams.ZBufferBits;
 		ContextSettings.stencilBits = CreationParams.Stencilbuffer ? 8 : 0;
 		
@@ -406,10 +300,6 @@ bool CIrrDeviceSFML::createWindowWithContext()
 		{
 			ContextSettings.antialiasingLevel = 0;
 		}
-		
-		//~ SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, CreationParams.WithAlphaChannel ? 1 : 0);
-		//~ SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, CreationParams.Doublebuffer ? 1 : 0);
-		//~ SDL_GL_SetAttribute(SDL_GL_STEREO, CreationParams.Stereobuffer ? 1 : 0);
 	}
 
 	sf::VideoMode videoMode(
@@ -599,42 +489,6 @@ bool CIrrDeviceSFML::run()
 
 		switch (sfml_event.type)
 		{
-		//~ case SDL_APP_WILLENTERBACKGROUND:
-			//~ irrevent.EventType = irr::EET_APPLICATION_EVENT;
-			//~ irrevent.ApplicationEvent.EventType = irr::EAET_WILL_PAUSE;
-			//~ postEventFromUser(irrevent);
-			//~ break;
-
-		//~ case SDL_APP_DIDENTERBACKGROUND:
-			//~ irrevent.EventType = irr::EET_APPLICATION_EVENT;
-			//~ irrevent.ApplicationEvent.EventType = irr::EAET_DID_PAUSE;
-			//~ postEventFromUser(irrevent);
-			//~ break;
-
-		//~ case SDL_APP_WILLENTERFOREGROUND:
-			//~ irrevent.EventType = irr::EET_APPLICATION_EVENT;
-			//~ irrevent.ApplicationEvent.EventType = irr::EAET_WILL_RESUME;
-			//~ postEventFromUser(irrevent);
-			//~ break;
-
-		//~ case SDL_APP_DIDENTERFOREGROUND:
-			//~ irrevent.EventType = irr::EET_APPLICATION_EVENT;
-			//~ irrevent.ApplicationEvent.EventType = irr::EAET_DID_RESUME;
-			//~ postEventFromUser(irrevent);
-			//~ break;
-
-		//~ case SDL_APP_LOWMEMORY:
-			//~ irrevent.EventType = irr::EET_APPLICATION_EVENT;
-			//~ irrevent.ApplicationEvent.EventType = irr::EAET_MEMORY_WARNING;
-			//~ postEventFromUser(irrevent);
-			//~ break;
-
-		//~ case SDL_APP_TERMINATING:
-			//~ irrevent.EventType = irr::EET_APPLICATION_EVENT;
-			//~ irrevent.ApplicationEvent.EventType = irr::EAET_WILL_TERMINATE;
-			//~ postEventFromUser(irrevent);
-			//~ break;
-
 		//~ // From https://github.com/libsdl-org/SDL/blob/main/docs/README-android.md
 		//~ // However, there's a chance (on older hardware, or on systems under heavy load),
 		//~ // where the GL context can not be restored. In that case you have to
@@ -688,64 +542,61 @@ bool CIrrDeviceSFML::run()
 			//~ }
 			//~ break;
 
-		//~ case SDL_FINGERMOTION:
-			//~ if (TouchIDs.size() == 1)
-			//~ {
-				//~ if (fabsf(LongTouchX - SDL_event.tfinger.x * Width) > Width * 0.05f ||
-					//~ fabsf(LongTouchY - SDL_event.tfinger.y * Height) > Height * 0.05f)
-				//~ {
-					//~ LongTouchHandled = true;
-				//~ }
-			//~ }
-
-			//~ irrevent.EventType = irr::EET_TOUCH_INPUT_EVENT;
-			//~ irrevent.TouchInput.Event = irr::ETIE_MOVED;
-			//~ irrevent.TouchInput.ID = SDL_event.tfinger.fingerId;
-			//~ irrevent.TouchInput.X = SDL_event.tfinger.x * Width;
-			//~ irrevent.TouchInput.Y = SDL_event.tfinger.y * Height;
-			//~ irrevent.TouchInput.touchedCount = TouchIDs.size();
-			//~ postEventFromUser(irrevent);
-			//~ break;
-
-		//~ case SDL_FINGERDOWN:
-			//~ // Long touch only for first finger
-			//~ if (TouchIDs.size() == 0)
-			//~ {
-				//~ LongTouchTimer = os::Timer::getTime();
-				//~ LongTouchX = SDL_event.tfinger.x * Width;
-				//~ LongTouchY = SDL_event.tfinger.y * Height;
-				//~ LongTouchHandled = false;
-			//~ }
-			//~ else
-			//~ {
-				//~ LongTouchHandled = true;
-			//~ }
-
-			//~ TouchIDs.insert(SDL_event.tfinger.fingerId);
-			//~ irrevent.EventType = irr::EET_TOUCH_INPUT_EVENT;
-			//~ irrevent.TouchInput.Event = irr::ETIE_PRESSED_DOWN;
-			//~ irrevent.TouchInput.ID = SDL_event.tfinger.fingerId;
-			//~ irrevent.TouchInput.X = SDL_event.tfinger.x * Width;
-			//~ irrevent.TouchInput.Y = SDL_event.tfinger.y * Height;
-			//~ irrevent.TouchInput.touchedCount = TouchIDs.size();
-			//~ postEventFromUser(irrevent);
-			//~ break;
-
-		//~ case SDL_FINGERUP:
-			//~ if (TouchIDs.size() == 1)
-			//~ {
-				//~ LongTouchHandled = true;
-			//~ }
-
-			//~ irrevent.EventType = irr::EET_TOUCH_INPUT_EVENT;
-			//~ irrevent.TouchInput.Event = irr::ETIE_LEFT_UP;
-			//~ irrevent.TouchInput.ID = SDL_event.tfinger.fingerId;
-			//~ irrevent.TouchInput.X = SDL_event.tfinger.x * Width;
-			//~ irrevent.TouchInput.Y = SDL_event.tfinger.y * Height;
-			//~ irrevent.TouchInput.touchedCount = TouchIDs.size();
-			//~ postEventFromUser(irrevent);
-			//~ TouchIDs.erase(SDL_event.tfinger.fingerId);
-			//~ break;
+		case sf::Event::TouchMoved:
+		    if (TouchIDs.size() == 1)
+		    {
+		        if (fabsf(LongTouchX - sfml_event.touch.x) > Width * 0.05f ||
+		            fabsf(LongTouchY - sfml_event.touch.y) > Height * 0.05f)
+		        {
+		            LongTouchHandled = true;
+		        }
+		    }
+		    irrevent.EventType = irr::EET_TOUCH_INPUT_EVENT;
+		    irrevent.TouchInput.Event = irr::ETIE_MOVED;
+		    irrevent.TouchInput.ID = sfml_event.touch.finger;
+		    irrevent.TouchInput.X = sfml_event.touch.x;
+		    irrevent.TouchInput.Y = sfml_event.touch.y;
+		    irrevent.TouchInput.touchedCount = TouchIDs.size();
+		    postEventFromUser(irrevent);
+		    break;
+		
+		case sf::Event::TouchBegan:
+		    // Long touch only for first finger
+		    if (TouchIDs.size() == 0)
+		    {
+		        LongTouchTimer = os::Timer::getTime();
+		        LongTouchX = sfml_event.touch.x;
+		        LongTouchY = sfml_event.touch.y;
+		        LongTouchHandled = false;
+		    }
+		    else
+		    {
+		        LongTouchHandled = true;
+		    }
+		    TouchIDs.insert(sfml_event.touch.finger);
+		    irrevent.EventType = irr::EET_TOUCH_INPUT_EVENT;
+		    irrevent.TouchInput.Event = irr::ETIE_PRESSED_DOWN;
+		    irrevent.TouchInput.ID = sfml_event.touch.finger;
+		    irrevent.TouchInput.X = sfml_event.touch.x;
+		    irrevent.TouchInput.Y = sfml_event.touch.y;
+		    irrevent.TouchInput.touchedCount = TouchIDs.size();
+		    postEventFromUser(irrevent);
+		    break;
+		
+		case sf::Event::TouchEnded:
+		    if (TouchIDs.size() == 1)
+		    {
+		        LongTouchHandled = true;
+		    }
+		    irrevent.EventType = irr::EET_TOUCH_INPUT_EVENT;
+		    irrevent.TouchInput.Event = irr::ETIE_LEFT_UP;
+		    irrevent.TouchInput.ID = sfml_event.touch.finger;
+		    irrevent.TouchInput.X = sfml_event.touch.x;
+		    irrevent.TouchInput.Y = sfml_event.touch.y;
+		    irrevent.TouchInput.touchedCount = TouchIDs.size();
+		    postEventFromUser(irrevent);
+		    TouchIDs.erase(sfml_event.touch.finger);
+		    break;
 
 		case sf::Event::MouseWheelScrolled:
 			{
@@ -1140,19 +991,19 @@ bool CIrrDeviceSFML::run()
 	//~ }
 //~ #endif
 
-	//~ if (os::Timer::getTime() > LongTouchTimer + 1000 && !LongTouchHandled)
-	//~ {
-		//~ LongTouchHandled = true;
+	if (os::Timer::getTime() > LongTouchTimer + 1000 && !LongTouchHandled)
+	{
+		LongTouchHandled = true;
 
-		//~ SEvent irrevent;
-		//~ irrevent.EventType = irr::EET_TOUCH_INPUT_EVENT;
-		//~ irrevent.TouchInput.Event = irr::ETIE_PRESSED_LONG;
-		//~ irrevent.TouchInput.ID = *(TouchIDs.begin());
-		//~ irrevent.TouchInput.X = LongTouchX;
-		//~ irrevent.TouchInput.Y = LongTouchY;
-		//~ irrevent.TouchInput.touchedCount = TouchIDs.size();
-		//~ postEventFromUser(irrevent);
-	//~ }
+		SEvent irrevent;
+		irrevent.EventType = irr::EET_TOUCH_INPUT_EVENT;
+		irrevent.TouchInput.Event = irr::ETIE_PRESSED_LONG;
+		irrevent.TouchInput.ID = *(TouchIDs.begin());
+		irrevent.TouchInput.X = LongTouchX;
+		irrevent.TouchInput.Y = LongTouchY;
+		irrevent.TouchInput.touchedCount = TouchIDs.size();
+		postEventFromUser(irrevent);
+	}
 
 	return !Close;
 }
@@ -1288,25 +1139,18 @@ video::IVideoModeList* CIrrDeviceSFML::getVideoModeList()
 //! Sets if the window should be resizable in windowed mode.
 void CIrrDeviceSFML::setResizable(bool resize)
 {
-	if (CreationParams.Fullscreen)
-		return;
-
-	//~ SDL_SetWindowResizable(Window, resize ? SDL_TRUE : SDL_FALSE);
-	Resizable = resize;
 }
 
 
 //! Minimizes window if possible
 void CIrrDeviceSFML::minimizeWindow()
 {
-	//~ SDL_MinimizeWindow(Window);
 }
 
 
 //! Maximize window
 void CIrrDeviceSFML::maximizeWindow()
 {
-	//~ SDL_MaximizeWindow(Window);
 }
 
 //! Get the position of this window on screen
@@ -1323,7 +1167,6 @@ core::position2di CIrrDeviceSFML::getWindowPosition()
 //! Restore original window size
 void CIrrDeviceSFML::restoreWindow()
 {
-	//~ SDL_RestoreWindow(Window);
 }
 
 bool CIrrDeviceSFML::isFullscreen() const
@@ -1335,7 +1178,7 @@ bool CIrrDeviceSFML::isFullscreen() const
 //! returns if window is active. if not, nothing need to be drawn
 bool CIrrDeviceSFML::isWindowActive() const
 {
-	return (WindowHasFocus && !WindowMinimized);
+	return WindowHasFocus;
 }
 
 
@@ -1349,7 +1192,7 @@ bool CIrrDeviceSFML::isWindowFocused() const
 //! returns if window is minimized.
 bool CIrrDeviceSFML::isWindowMinimized() const
 {
-	return WindowMinimized;
+	return !WindowHasFocus;
 }
 
 
