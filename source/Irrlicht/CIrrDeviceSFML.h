@@ -17,11 +17,8 @@
 #include "IImagePresenter.h"
 #include "ICursorControl.h"
 
-#include <SFML/System/Sleep.hpp>
-#include <SFML/Window/Clipboard.hpp>
-#include <SFML/Window/Context.hpp>
-#include <SFML/Window/Event.hpp>
-#include <SFML/Window/Window.hpp>
+#include <SFML/System.hpp>
+#include <SFML/Window.hpp>
 
 #include <set>
 

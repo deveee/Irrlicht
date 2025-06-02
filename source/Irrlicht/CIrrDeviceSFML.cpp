@@ -168,10 +168,10 @@ bool CIrrDeviceSFML::createWindow()
 	{
 		sf::VideoMode mode = sf::VideoMode::getDesktopMode();
 
-		if (mode.width > 0 || mode.height > 0)
+		if (mode.size.x > 0 || mode.size.y > 0)
 		{
-			Width = roundf((float)mode.width * NativeScaleX);
-			Height = roundf((float)mode.height * NativeScaleY);
+			Width = roundf((float)mode.size.x * NativeScaleX);
+			Height = roundf((float)mode.size.y * NativeScaleY);
 
 		}
 		else
@@ -251,20 +251,8 @@ bool CIrrDeviceSFML::createWindow()
 
 bool CIrrDeviceSFML::createWindowWithContext()
 {
-	sf::Uint32 sfmlStyle = sf::Style::Default;
-	
-	if (CreationParams.Fullscreen)
-	{
-		sfmlStyle = sf::Style::Fullscreen;
-	}
-	else if (Resizable)
-	{
-		sfmlStyle = sf::Style::Default; // Default includes resize
-	}
-	else
-	{
-		sfmlStyle = sf::Style::Titlebar | sf::Style::Close;
-	}
+	std::uint32_t sfmlStyle = Resizable ? sf::Style::Default : sf::Style::Close;
+	sf::State sfmlState = CreationParams.Fullscreen ? sf::State::Fullscreen : sf::State::Windowed;
 	
 	sf::ContextSettings ContextSettings;
 	
@@ -293,20 +281,20 @@ bool CIrrDeviceSFML::createWindowWithContext()
 		
 		if (CreationParams.AntiAlias > 1)
 		{
-			ContextSettings.antialiasingLevel = CreationParams.AntiAlias;
+			ContextSettings.antiAliasingLevel = CreationParams.AntiAlias;
 		}
 		else
 		{
-			ContextSettings.antialiasingLevel = 0;
+			ContextSettings.antiAliasingLevel = 0;
 		}
 	}
 
-	sf::VideoMode videoMode(
+	sf::VideoMode videoMode({
 		static_cast<unsigned int>(roundf((float)Width / NativeScaleX)),
-		static_cast<unsigned int>(roundf((float)Height / NativeScaleY))
+		static_cast<unsigned int>(roundf((float)Height / NativeScaleY))}
 	);
 
-	Window = new sf::Window(videoMode, "", sfmlStyle, ContextSettings);
+	Window = new sf::Window(videoMode, "", sfmlStyle, sfmlState, ContextSettings);
 	
 	if (!Window || !Window->isOpen())
 	{
@@ -322,7 +310,7 @@ bool CIrrDeviceSFML::createWindowWithContext()
 			ContextSettings.majorVersion = 2;
 			ContextSettings.minorVersion = 0;
 			
-			Window = new sf::Window(videoMode, "", sfmlStyle, ContextSettings);
+			Window = new sf::Window(videoMode, "", sfmlStyle, sfmlState, ContextSettings);
 			
 			if (!Window || !Window->isOpen())
 			{
@@ -480,14 +468,12 @@ bool CIrrDeviceSFML::run()
 		return false;
 
 	SEvent irrevent;
-	sf::Event sfml_event;
 
-	while (!Close && Window->pollEvent(sfml_event))
+	while (const std::optional sfml_event = Window->pollEvent())
 	{
-		// os::Printer::log("event: ", core::stringc((int)sfml_event.type).c_str(), ELL_INFORMATION); // just for debugging
+		if (Close)
+			break;
 
-		switch (sfml_event.type)
-		{
 		//~ // From https://github.com/libsdl-org/SDL/blob/main/docs/README-android.md
 		//~ // However, there's a chance (on older hardware, or on systems under heavy load),
 		//~ // where the GL context can not be restored. In that case you have to
@@ -541,247 +527,306 @@ bool CIrrDeviceSFML::run()
 			//~ }
 			//~ break;
 
-		case sf::Event::TouchMoved:
-		    if (TouchIDs.size() == 1)
-		    {
-		        if (fabsf(LongTouchX - sfml_event.touch.x) > Width * 0.05f ||
-		            fabsf(LongTouchY - sfml_event.touch.y) > Height * 0.05f)
-		        {
-		            LongTouchHandled = true;
-		        }
-		    }
-		    irrevent.EventType = irr::EET_TOUCH_INPUT_EVENT;
-		    irrevent.TouchInput.Event = irr::ETIE_MOVED;
-		    irrevent.TouchInput.ID = sfml_event.touch.finger;
-		    irrevent.TouchInput.X = sfml_event.touch.x;
-		    irrevent.TouchInput.Y = sfml_event.touch.y;
-		    irrevent.TouchInput.touchedCount = TouchIDs.size();
-		    postEventFromUser(irrevent);
-		    break;
+		if (sfml_event->is<sf::Event::TouchMoved>())
+		{
+			const auto* touch = sfml_event->getIf<sf::Event::TouchMoved>();
+			
+			if (TouchIDs.size() == 1)
+			{
+				if (std::abs(LongTouchX - touch->position.x) > Width * 0.05f ||
+					std::abs(LongTouchY - touch->position.y) > Height * 0.05f)
+				{
+					LongTouchHandled = true;
+				}
+			}
+			irrevent.EventType = irr::EET_TOUCH_INPUT_EVENT;
+			irrevent.TouchInput.Event = irr::ETIE_MOVED;
+			irrevent.TouchInput.ID = touch->finger;
+			irrevent.TouchInput.X = touch->position.x;
+			irrevent.TouchInput.Y = touch->position.y;
+			irrevent.TouchInput.touchedCount = TouchIDs.size();
+			postEventFromUser(irrevent);
+		}
 		
-		case sf::Event::TouchBegan:
-		    // Long touch only for first finger
-		    if (TouchIDs.size() == 0)
-		    {
-		        LongTouchTimer = os::Timer::getTime();
-		        LongTouchX = sfml_event.touch.x;
-		        LongTouchY = sfml_event.touch.y;
-		        LongTouchHandled = false;
-		    }
-		    else
-		    {
-		        LongTouchHandled = true;
-		    }
-		    TouchIDs.insert(sfml_event.touch.finger);
-		    irrevent.EventType = irr::EET_TOUCH_INPUT_EVENT;
-		    irrevent.TouchInput.Event = irr::ETIE_PRESSED_DOWN;
-		    irrevent.TouchInput.ID = sfml_event.touch.finger;
-		    irrevent.TouchInput.X = sfml_event.touch.x;
-		    irrevent.TouchInput.Y = sfml_event.touch.y;
-		    irrevent.TouchInput.touchedCount = TouchIDs.size();
-		    postEventFromUser(irrevent);
-		    break;
+		else if (sfml_event->is<sf::Event::TouchBegan>())
+		{
+			const auto* touch = sfml_event->getIf<sf::Event::TouchBegan>();
+			
+			// Long touch only for first finger
+			if (TouchIDs.size() == 0)
+			{
+				LongTouchTimer = os::Timer::getTime();
+				LongTouchX = touch->position.x;
+				LongTouchY = touch->position.y;
+				LongTouchHandled = false;
+			}
+			else
+			{
+				LongTouchHandled = true;
+			}
+			
+			TouchIDs.insert(touch->finger);
+			irrevent.EventType = irr::EET_TOUCH_INPUT_EVENT;
+			irrevent.TouchInput.Event = irr::ETIE_PRESSED_DOWN;
+			irrevent.TouchInput.ID = touch->finger;
+			irrevent.TouchInput.X = touch->position.x;
+			irrevent.TouchInput.Y = touch->position.y;
+			irrevent.TouchInput.touchedCount = TouchIDs.size();
+		   	postEventFromUser(irrevent);
+		}
 		
-		case sf::Event::TouchEnded:
-		    if (TouchIDs.size() == 1)
-		    {
-		        LongTouchHandled = true;
-		    }
-		    irrevent.EventType = irr::EET_TOUCH_INPUT_EVENT;
-		    irrevent.TouchInput.Event = irr::ETIE_LEFT_UP;
-		    irrevent.TouchInput.ID = sfml_event.touch.finger;
-		    irrevent.TouchInput.X = sfml_event.touch.x;
-		    irrevent.TouchInput.Y = sfml_event.touch.y;
-		    irrevent.TouchInput.touchedCount = TouchIDs.size();
-		    postEventFromUser(irrevent);
-		    TouchIDs.erase(sfml_event.touch.finger);
-		    break;
-
-		case sf::Event::MouseWheelScrolled:
+		else if (sfml_event->is<sf::Event::TouchEnded>())
+		{
+			const auto* touch = sfml_event->getIf<sf::Event::TouchEnded>();
+			
+			if (TouchIDs.size() == 1)
 			{
-				irrevent.EventType = irr::EET_MOUSE_INPUT_EVENT;
-				irrevent.MouseInput.Event = irr::EMIE_MOUSE_WHEEL;
-				irrevent.MouseInput.X = MouseX;
-				irrevent.MouseInput.Y = MouseY;
+				LongTouchHandled = true;
+			}
+			
+			irrevent.EventType = irr::EET_TOUCH_INPUT_EVENT;
+			irrevent.TouchInput.Event = irr::ETIE_LEFT_UP;
+			irrevent.TouchInput.ID = touch->finger;
+			irrevent.TouchInput.X = touch->position.x;
+			irrevent.TouchInput.Y = touch->position.y;
+			irrevent.TouchInput.touchedCount = TouchIDs.size();
+			postEventFromUser(irrevent);
+			TouchIDs.erase(touch->finger);
+		}
+
+		else if (sfml_event->is<sf::Event::MouseWheelScrolled>())
+		{
+			const auto* mouseWheelScroll = sfml_event->getIf<sf::Event::MouseWheelScrolled>();
+			irrevent.EventType = irr::EET_MOUSE_INPUT_EVENT;
+			irrevent.MouseInput.Event = irr::EMIE_MOUSE_WHEEL;
+			irrevent.MouseInput.X = MouseX;
+			irrevent.MouseInput.Y = MouseY;
 
 #if defined(_IRR_IOS_PLATFORM_) || defined(_IRR_OSX_PLATFORM_)
-				irrevent.MouseInput.Control = sf::Keyboard::isKeyPressed(sf::Keyboard::LSystem) ||
-					sf::Keyboard::isKeyPressed(sf::Keyboard::RSystem);
+			irrevent.MouseInput.Control = sf::Keyboard::isKeyPressed(sf::Keyboard::Key::LSystem) ||
+				sf::Keyboard::isKeyPressed(sf::Keyboard::Key::RSystem);
 #else
-				irrevent.MouseInput.Control = sf::Keyboard::isKeyPressed(sf::Keyboard::LControl) ||
-					sf::Keyboard::isKeyPressed(sf::Keyboard::RControl);
+			irrevent.MouseInput.Control = sf::Keyboard::isKeyPressed(sf::Keyboard::Key::LControl) ||
+				sf::Keyboard::isKeyPressed(sf::Keyboard::Key::RControl);
 #endif
-				irrevent.MouseInput.Shift = sf::Keyboard::isKeyPressed(sf::Keyboard::LShift) ||
-					sf::Keyboard::isKeyPressed(sf::Keyboard::RShift);
+			irrevent.MouseInput.Shift = sf::Keyboard::isKeyPressed(sf::Keyboard::Key::LShift) ||
+				sf::Keyboard::isKeyPressed(sf::Keyboard::Key::RShift);
 
-				irrevent.MouseInput.ButtonStates = MouseButtonStates;
-				
-				if (sfml_event.mouseWheelScroll.wheel == sf::Mouse::VerticalWheel)
-				{
-					irrevent.MouseInput.Wheel = sfml_event.mouseWheelScroll.delta;
-				}
-				else if (sfml_event.mouseWheelScroll.wheel == sf::Mouse::HorizontalWheel)
-				{
-					irrevent.MouseInput.Wheel = sfml_event.mouseWheelScroll.delta;
-				}
-
-				postEventFromUser(irrevent);
-			}
-			break;
-		case sf::Event::MouseMoved:
+			irrevent.MouseInput.ButtonStates = MouseButtonStates;
+			
+			if (mouseWheelScroll->wheel == sf::Mouse::Wheel::Vertical)
 			{
+				irrevent.MouseInput.Wheel = mouseWheelScroll->delta;
+			}
+			else if (mouseWheelScroll->wheel == sf::Mouse::Wheel::Horizontal)
+			{
+				irrevent.MouseInput.Wheel = mouseWheelScroll->delta;
+			}
+
+			postEventFromUser(irrevent);
+		}
+
+		else if (sfml_event->is<sf::Event::MouseMoved>())
+		{
+			const auto* mouseMove = sfml_event->getIf<sf::Event::MouseMoved>();
 #if defined(_IRR_ANDROID_PLATFORM_) || defined(_IRR_IOS_PLATFORM_)
-				if (!ShouldUseRelativeMouse)
-					break;
+			if (!ShouldUseRelativeMouse)
+				break;
 #endif
 
-				if (IgnoreWarpMouseEvent)
-				{
-					IgnoreWarpMouseEvent = false;
-					break;
-				}
+			if (IgnoreWarpMouseEvent)
+			{
+				IgnoreWarpMouseEvent = false;
+				break;
+			}
 
-				irrevent.EventType = irr::EET_MOUSE_INPUT_EVENT;
-				irrevent.MouseInput.Event = irr::EMIE_MOUSE_MOVED;
+			irrevent.EventType = irr::EET_MOUSE_INPUT_EVENT;
+			irrevent.MouseInput.Event = irr::EMIE_MOUSE_MOVED;
 
-				MouseX = irrevent.MouseInput.X = sfml_event.mouseMove.x * NativeScaleX;
-				MouseY = irrevent.MouseInput.Y = sfml_event.mouseMove.y * NativeScaleY;
+			MouseX = irrevent.MouseInput.X = mouseMove->position.x * NativeScaleX;
+			MouseY = irrevent.MouseInput.Y = mouseMove->position.y * NativeScaleY;
 
 #if defined(_IRR_IOS_PLATFORM_) || defined(_IRR_OSX_PLATFORM_)
-				irrevent.MouseInput.Control = sf::Keyboard::isKeyPressed(sf::Keyboard::LSystem) ||
-					sf::Keyboard::isKeyPressed(sf::Keyboard::RSystem);
+			irrevent.MouseInput.Control = sf::Keyboard::isKeyPressed(sf::Keyboard::Key::LSystem) ||
+				sf::Keyboard::isKeyPressed(sf::Keyboard::Key::RSystem);
 #else
-				irrevent.MouseInput.Control = sf::Keyboard::isKeyPressed(sf::Keyboard::LControl) ||
-					sf::Keyboard::isKeyPressed(sf::Keyboard::RControl);
+			irrevent.MouseInput.Control = sf::Keyboard::isKeyPressed(sf::Keyboard::Key::LControl) ||
+				sf::Keyboard::isKeyPressed(sf::Keyboard::Key::RControl);
 #endif
-				irrevent.MouseInput.Shift = sf::Keyboard::isKeyPressed(sf::Keyboard::LShift) ||
-					sf::Keyboard::isKeyPressed(sf::Keyboard::RShift);
+			irrevent.MouseInput.Shift = sf::Keyboard::isKeyPressed(sf::Keyboard::Key::LShift) ||
+				sf::Keyboard::isKeyPressed(sf::Keyboard::Key::RShift);
 
-				irrevent.MouseInput.ButtonStates = MouseButtonStates;
+			irrevent.MouseInput.ButtonStates = MouseButtonStates;
 
-				postEventFromUser(irrevent);
-			}
-			break;
-		case sf::Event::MouseButtonPressed:
-		case sf::Event::MouseButtonReleased:
+			postEventFromUser(irrevent);
+		}
+
+		else if (sfml_event->is<sf::Event::MouseButtonPressed>() ||
+			sfml_event->is<sf::Event::MouseButtonReleased>())
+		{
+			bool mouseButtonPressed; 
+			sf::Vector2i mouseButtonPosition;
+			sf::Mouse::Button mouseButtonButton;
+			
+			if (sfml_event->is<sf::Event::MouseButtonPressed>())
 			{
+				const auto* mouseButton = sfml_event->getIf<sf::Event::MouseButtonPressed>();
+				mouseButtonPressed = true;
+				mouseButtonPosition = mouseButton->position;
+				mouseButtonButton = mouseButton->button;
+			}
+			else
+			{
+				const auto* mouseButton = sfml_event->getIf<sf::Event::MouseButtonReleased>();
+				mouseButtonPressed = false;
+				mouseButtonPosition = mouseButton->position;
+				mouseButtonButton = mouseButton->button;
+			}
+
 #if defined(_IRR_ANDROID_PLATFORM_) || defined(_IRR_IOS_PLATFORM_)
-				if (!ShouldUseRelativeMouse)
-					break;
+			if (!ShouldUseRelativeMouse)
+				break;
 #endif
 
-				irrevent.EventType = irr::EET_MOUSE_INPUT_EVENT;
-				irrevent.MouseInput.X = sfml_event.mouseButton.x * NativeScaleX;
-				irrevent.MouseInput.Y = sfml_event.mouseButton.y * NativeScaleY;
+			irrevent.EventType = irr::EET_MOUSE_INPUT_EVENT;
+			irrevent.MouseInput.X = mouseButtonPosition.x * NativeScaleX;
+			irrevent.MouseInput.Y = mouseButtonPosition.y * NativeScaleY;
 
 #if defined(_IRR_IOS_PLATFORM_) || defined(_IRR_OSX_PLATFORM_)
-				irrevent.MouseInput.Control = sf::Keyboard::isKeyPressed(sf::Keyboard::LSystem) ||
-					sf::Keyboard::isKeyPressed(sf::Keyboard::RSystem);
+			irrevent.MouseInput.Control = sf::Keyboard::isKeyPressed(sf::Keyboard::Key::LSystem) ||
+				sf::Keyboard::isKeyPressed(sf::Keyboard::Key::RSystem);
 #else
-				irrevent.MouseInput.Control = sf::Keyboard::isKeyPressed(sf::Keyboard::LControl) ||
-					sf::Keyboard::isKeyPressed(sf::Keyboard::RControl);
+			irrevent.MouseInput.Control = sf::Keyboard::isKeyPressed(sf::Keyboard::Key::LControl) ||
+				sf::Keyboard::isKeyPressed(sf::Keyboard::Key::RControl);
 #endif
-				irrevent.MouseInput.Shift = sf::Keyboard::isKeyPressed(sf::Keyboard::LShift) ||
-					sf::Keyboard::isKeyPressed(sf::Keyboard::RShift);
+			irrevent.MouseInput.Shift = sf::Keyboard::isKeyPressed(sf::Keyboard::Key::LShift) ||
+				sf::Keyboard::isKeyPressed(sf::Keyboard::Key::RShift);
 
-				irrevent.MouseInput.Event = irr::EMIE_MOUSE_MOVED;
+			irrevent.MouseInput.Event = irr::EMIE_MOUSE_MOVED;
 
-				switch (sfml_event.mouseButton.button)
-				{
-				case sf::Mouse::Left:
-					if (sfml_event.type == sf::Event::MouseButtonPressed)
-					{
-						irrevent.MouseInput.Event = irr::EMIE_LMOUSE_PRESSED_DOWN;
-						MouseButtonStates |= irr::EMBSM_LEFT;
-					}
-					else
-					{
-						irrevent.MouseInput.Event = irr::EMIE_LMOUSE_LEFT_UP;
-						MouseButtonStates &= ~irr::EMBSM_LEFT;
-					}
-					break;
-
-				case sf::Mouse::Right:
-					if (sfml_event.type == sf::Event::MouseButtonPressed)
-					{
-						irrevent.MouseInput.Event = irr::EMIE_RMOUSE_PRESSED_DOWN;
-						MouseButtonStates |= irr::EMBSM_RIGHT;
-					}
-					else
-					{
-						irrevent.MouseInput.Event = irr::EMIE_RMOUSE_LEFT_UP;
-						MouseButtonStates &= ~irr::EMBSM_RIGHT;
-					}
-					break;
-
-				case sf::Mouse::Middle:
-					if (sfml_event.type == sf::Event::MouseButtonPressed)
-					{
-						irrevent.MouseInput.Event = irr::EMIE_MMOUSE_PRESSED_DOWN;
-						MouseButtonStates |= irr::EMBSM_MIDDLE;
-					}
-					else
-					{
-						irrevent.MouseInput.Event = irr::EMIE_MMOUSE_LEFT_UP;
-						MouseButtonStates &= ~irr::EMBSM_MIDDLE;
-					}
-					break;
-
-				default:
-					break;
-				}
-
-				irrevent.MouseInput.ButtonStates = MouseButtonStates;
-
-				if (irrevent.MouseInput.Event != irr::EMIE_MOUSE_MOVED)
-				{
-					postEventFromUser(irrevent);
-
-					if ( irrevent.MouseInput.Event >= EMIE_LMOUSE_PRESSED_DOWN && irrevent.MouseInput.Event <= EMIE_MMOUSE_PRESSED_DOWN )
-					{
-						u32 clicks = checkSuccessiveClicks(irrevent.MouseInput.X, irrevent.MouseInput.Y, irrevent.MouseInput.Event);
-						if ( clicks == 2 )
-						{
-							irrevent.MouseInput.Event = (EMOUSE_INPUT_EVENT)(EMIE_LMOUSE_DOUBLE_CLICK + irrevent.MouseInput.Event-EMIE_LMOUSE_PRESSED_DOWN);
-							postEventFromUser(irrevent);
-						}
-						else if ( clicks == 3 )
-						{
-							irrevent.MouseInput.Event = (EMOUSE_INPUT_EVENT)(EMIE_LMOUSE_TRIPLE_CLICK + irrevent.MouseInput.Event-EMIE_LMOUSE_PRESSED_DOWN);
-							postEventFromUser(irrevent);
-						}
-					}
-				}
-			}
-			break;
-
-		case sf::Event::KeyPressed:
-		case sf::Event::KeyReleased:
+			switch (mouseButtonButton)
 			{
-				sf::Keyboard::Key key = sfml_event.key.code;
-				SKeyMap mp;
-				mp.Key = key;
-				s32 idx = KeyMap.binary_search(mp);
-				
-				EKEY_CODE keyCode;
-				if (idx == -1)
-					keyCode = (EKEY_CODE)0;
+			case sf::Mouse::Button::Left:
+				if (mouseButtonPressed)
+				{
+					irrevent.MouseInput.Event = irr::EMIE_LMOUSE_PRESSED_DOWN;
+					MouseButtonStates |= irr::EMBSM_LEFT;
+				}
 				else
-					keyCode = (EKEY_CODE)KeyMap[idx].IrrKeycode;
-				
-				irrevent.EventType = irr::EET_KEY_INPUT_EVENT;
-				irrevent.KeyInput.Char = 0;
-				irrevent.KeyInput.Key = keyCode;
-				irrevent.KeyInput.PressedDown = (sfml_event.type == sf::Event::KeyPressed);
-				irrevent.KeyInput.Shift = sfml_event.key.shift;
-#if defined(_IRR_IOS_PLATFORM_) || defined(_IRR_OSX_PLATFORM_)
-				irrevent.KeyInput.Control = sfml_event.key.system;
-#else
-				irrevent.KeyInput.Control = sfml_event.key.control;
-#endif
-				postEventFromUser(irrevent);
+				{
+					irrevent.MouseInput.Event = irr::EMIE_LMOUSE_LEFT_UP;
+					MouseButtonStates &= ~irr::EMBSM_LEFT;
+				}
+				break;
+
+			case sf::Mouse::Button::Right:
+				if (mouseButtonPressed)
+				{
+					irrevent.MouseInput.Event = irr::EMIE_RMOUSE_PRESSED_DOWN;
+					MouseButtonStates |= irr::EMBSM_RIGHT;
+				}
+				else
+				{
+					irrevent.MouseInput.Event = irr::EMIE_RMOUSE_LEFT_UP;
+					MouseButtonStates &= ~irr::EMBSM_RIGHT;
+				}
+				break;
+
+			case sf::Mouse::Button::Middle:
+				if (mouseButtonPressed)
+				{
+					irrevent.MouseInput.Event = irr::EMIE_MMOUSE_PRESSED_DOWN;
+					MouseButtonStates |= irr::EMBSM_MIDDLE;
+				}
+				else
+				{
+					irrevent.MouseInput.Event = irr::EMIE_MMOUSE_LEFT_UP;
+					MouseButtonStates &= ~irr::EMBSM_MIDDLE;
+				}
+				break;
+
+			default:
+				break;
 			}
-			break;
+
+			irrevent.MouseInput.ButtonStates = MouseButtonStates;
+
+			if (irrevent.MouseInput.Event != irr::EMIE_MOUSE_MOVED)
+			{
+				postEventFromUser(irrevent);
+
+				if ( irrevent.MouseInput.Event >= EMIE_LMOUSE_PRESSED_DOWN && irrevent.MouseInput.Event <= EMIE_MMOUSE_PRESSED_DOWN )
+				{
+					u32 clicks = checkSuccessiveClicks(irrevent.MouseInput.X, irrevent.MouseInput.Y, irrevent.MouseInput.Event);
+					if ( clicks == 2 )
+					{
+						irrevent.MouseInput.Event = (EMOUSE_INPUT_EVENT)(EMIE_LMOUSE_DOUBLE_CLICK + irrevent.MouseInput.Event-EMIE_LMOUSE_PRESSED_DOWN);
+						postEventFromUser(irrevent);
+					}
+					else if ( clicks == 3 )
+					{
+						irrevent.MouseInput.Event = (EMOUSE_INPUT_EVENT)(EMIE_LMOUSE_TRIPLE_CLICK + irrevent.MouseInput.Event-EMIE_LMOUSE_PRESSED_DOWN);
+						postEventFromUser(irrevent);
+					}
+				}
+			}
+		}
+
+		else if (sfml_event->is<sf::Event::KeyPressed>())
+		{
+			const auto* key_event = sfml_event->getIf<sf::Event::KeyPressed>();
+					
+			sf::Keyboard::Key key = key_event->code;
+			SKeyMap mp;
+			mp.Key = key;
+			s32 idx = KeyMap.binary_search(mp);
+			
+			EKEY_CODE keyCode;
+			if (idx == -1)
+				keyCode = (EKEY_CODE)0;
+			else
+				keyCode = (EKEY_CODE)KeyMap[idx].IrrKeycode;
+			
+			irrevent.EventType = irr::EET_KEY_INPUT_EVENT;
+			irrevent.KeyInput.Char = 0;
+			irrevent.KeyInput.Key = keyCode;
+			irrevent.KeyInput.PressedDown = true;
+			irrevent.KeyInput.Shift = key_event->shift;
+#if defined(_IRR_IOS_PLATFORM_) || defined(_IRR_OSX_PLATFORM_)
+			irrevent.KeyInput.Control = key_event->system;
+#else
+			irrevent.KeyInput.Control = key_event->control;
+#endif
+			postEventFromUser(irrevent);
+		}
+		
+		else if (sfml_event->is<sf::Event::KeyReleased>())
+		{
+			const auto* key_event = sfml_event->getIf<sf::Event::KeyReleased>();
+					
+			sf::Keyboard::Key key = key_event->code;
+			SKeyMap mp;
+			mp.Key = key;
+			s32 idx = KeyMap.binary_search(mp);
+			
+			EKEY_CODE keyCode;
+			if (idx == -1)
+				keyCode = (EKEY_CODE)0;
+			else
+				keyCode = (EKEY_CODE)KeyMap[idx].IrrKeycode;
+			
+			irrevent.EventType = irr::EET_KEY_INPUT_EVENT;
+			irrevent.KeyInput.Char = 0;
+			irrevent.KeyInput.Key = keyCode;
+			irrevent.KeyInput.PressedDown = false;
+			irrevent.KeyInput.Shift = key_event->shift;
+#if defined(_IRR_IOS_PLATFORM_) || defined(_IRR_OSX_PLATFORM_)
+			irrevent.KeyInput.Control = key_event->system;
+#else
+			irrevent.KeyInput.Control = key_event->control;
+#endif
+			postEventFromUser(irrevent);
+		}
 
 //~ #if defined(_IRR_COMPILE_WITH_SDL_GAMECONTROLLER)
 		//~ case SDL_CONTROLLERBUTTONDOWN:
@@ -828,64 +873,58 @@ bool CIrrDeviceSFML::run()
 			//~ break;
 //~ #endif
 
-		case sf::Event::Closed:
+		else if (sfml_event->is<sf::Event::Closed>())
+		{
 			Close = true;
 			return false;
-			
-		case sf::Event::Resized:
-			{
-				updateNativeScale();
-				u32 new_width = roundf((float)sfml_event.size.width * NativeScaleX);
-				u32 new_height = roundf((float)sfml_event.size.height * NativeScaleY);
-				if (new_width != Width || new_height != Height)
-				{
-					Width = new_width;
-					Height = new_height;
-					if (VideoDriver)
-						VideoDriver->OnResize(core::dimension2d<u32>(Width, Height));
-				}
-			}
-			break;
-			
-		case sf::Event::GainedFocus:
-			{
-				WindowHasFocus = true;
-			}
-			break;
+		}
 		
-		case sf::Event::LostFocus:
+		else if (sfml_event->is<sf::Event::Resized>())	
+		{
+			const auto* size = sfml_event->getIf<sf::Event::Resized>();
+			
+			updateNativeScale();
+			u32 new_width = roundf((float)size->size.x * NativeScaleX);
+			u32 new_height = roundf((float)size->size.y * NativeScaleY);
+			if (new_width != Width || new_height != Height)
 			{
-				WindowHasFocus = false;
+				Width = new_width;
+				Height = new_height;
+				if (VideoDriver)
+					VideoDriver->OnResize(core::dimension2d<u32>(Width, Height));
 			}
-			break;
+		}
+		
+		else if (sfml_event->is<sf::Event::FocusGained>())
+		{
+			WindowHasFocus = true;
+		}
+		
+		else if (sfml_event->is<sf::Event::FocusLost>())
+		{
+			WindowHasFocus = false;
+		}
 
-		case sf::Event::TextEntered:
-		    {
-		        irrevent.EventType = irr::EET_SDL_TEXT_EVENT;
-		        irrevent.SDLTextEvent.Type = irr::ESDLET_TEXTINPUT;
-		        
-		        sf::Uint32 unicode = sfml_event.text.unicode;
-		        sf::String unicodeStr(unicode);
-		        std::basic_string<sf::Uint8> utf8_raw = unicodeStr.toUtf8();
-		        std::string utf8(utf8_raw.begin(), utf8_raw.end());
-		        
-		        const size_t size = sizeof(irrevent.SDLTextEvent.Text);
-		        memset(irrevent.SDLTextEvent.Text, 0, size);
-		        
-		        if (utf8.length() < size) {
-		            memcpy(irrevent.SDLTextEvent.Text, utf8.c_str(), utf8.length());
-		        }
-		        
-		        irrevent.SDLTextEvent.Start = 0;
-		        irrevent.SDLTextEvent.Length = 0;
-		        postEventFromUser(irrevent);
-		    }
-		    break;
-
-		default:
-			break;
-		} // end switch
-
+		else if (sfml_event->is<sf::Event::TextEntered>())
+		{
+			const auto* text = sfml_event->getIf<sf::Event::TextEntered>();
+			
+			irrevent.EventType = irr::EET_SDL_TEXT_EVENT;
+			irrevent.SDLTextEvent.Type = irr::ESDLET_TEXTINPUT;
+			
+			sf::String sfStr(text->unicode);
+   			sf::U8String utf8 = sfStr.toUtf8();
+			const size_t size = sizeof(irrevent.SDLTextEvent.Text);
+			memset(irrevent.SDLTextEvent.Text, 0, size);
+			
+			if (utf8.length() < size) {
+				memcpy(irrevent.SDLTextEvent.Text, utf8.c_str(), utf8.length());
+			}
+			
+			irrevent.SDLTextEvent.Start = 0;
+			irrevent.SDLTextEvent.Length = 0;
+			postEventFromUser(irrevent);
+		}
 	} // end while
 
 //~ #if defined(_IRR_COMPILE_WITH_SFML_GAMECONTROLLER)
@@ -1120,13 +1159,13 @@ video::IVideoModeList* CIrrDeviceSFML::getVideoModeList()
 		
 		sf::VideoMode desktopMode = sf::VideoMode::getDesktopMode();
 		VideoModeList->setDesktop(desktopMode.bitsPerPixel,
-			core::dimension2d<u32>(desktopMode.width, desktopMode.height));
+			core::dimension2d<u32>(desktopMode.size.x, desktopMode.size.y));
 		
 		for (const sf::VideoMode& mode : modes)
 		{
 			if (mode.isValid())
 			{
-				VideoModeList->addMode(core::dimension2d<u32>(mode.width, mode.height),
+				VideoModeList->addMode(core::dimension2d<u32>(mode.size.x, mode.size.y),
 					mode.bitsPerPixel);
 			}
 		}
@@ -1252,110 +1291,108 @@ void CIrrDeviceSFML::createKeyMap()
 {
 	KeyMap.reallocate(136);
 
-	KeyMap.push_back(SKeyMap(sf::Keyboard::BackSpace, KEY_BACK));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::Tab, KEY_TAB));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::Enter, KEY_RETURN));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::Pause, KEY_PAUSE));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::Escape, KEY_ESCAPE));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::Space, KEY_SPACE));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::PageUp, KEY_PRIOR));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::PageDown, KEY_NEXT));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::End, KEY_END));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::Home, KEY_HOME));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::Left, KEY_LEFT));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::Up, KEY_UP));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::Right, KEY_RIGHT));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::Down, KEY_DOWN));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::Insert, KEY_INSERT));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::Delete, KEY_DELETE));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::Num0, KEY_KEY_0));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::Num1, KEY_KEY_1));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::Num2, KEY_KEY_2));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::Num3, KEY_KEY_3));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::Num4, KEY_KEY_4));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::Num5, KEY_KEY_5));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::Num6, KEY_KEY_6));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::Num7, KEY_KEY_7));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::Num8, KEY_KEY_8));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::Num9, KEY_KEY_9));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::A, KEY_KEY_A));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::B, KEY_KEY_B));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::C, KEY_KEY_C));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::D, KEY_KEY_D));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::E, KEY_KEY_E));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::F, KEY_KEY_F));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::G, KEY_KEY_G));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::H, KEY_KEY_H));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::I, KEY_KEY_I));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::J, KEY_KEY_J));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::K, KEY_KEY_K));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::L, KEY_KEY_L));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::M, KEY_KEY_M));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::N, KEY_KEY_N));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::O, KEY_KEY_O));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::P, KEY_KEY_P));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::Q, KEY_KEY_Q));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::R, KEY_KEY_R));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::S, KEY_KEY_S));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::T, KEY_KEY_T));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::U, KEY_KEY_U));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::V, KEY_KEY_V));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::W, KEY_KEY_W));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::X, KEY_KEY_X));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::Y, KEY_KEY_Y));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::Z, KEY_KEY_Z));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::LSystem, KEY_LWIN));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::RSystem, KEY_RWIN));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::Numpad0, KEY_NUMPAD0));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::Numpad1, KEY_NUMPAD1));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::Numpad2, KEY_NUMPAD2));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::Numpad3, KEY_NUMPAD3));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::Numpad4, KEY_NUMPAD4));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::Numpad5, KEY_NUMPAD5));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::Numpad6, KEY_NUMPAD6));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::Numpad7, KEY_NUMPAD7));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::Numpad8, KEY_NUMPAD8));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::Numpad9, KEY_NUMPAD9));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::Multiply, KEY_MULTIPLY));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::Period, KEY_PERIOD));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::Add, KEY_ADD));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::Subtract, KEY_SUBTRACT));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::Divide, KEY_DIVIDE));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::Enter, KEY_RETURN));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::Period, KEY_PERIOD));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::F1,  KEY_F1));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::F2,  KEY_F2));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::F3,  KEY_F3));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::F4,  KEY_F4));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::F5,  KEY_F5));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::F6,  KEY_F6));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::F7,  KEY_F7));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::F8,  KEY_F8));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::F9,  KEY_F9));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::F10, KEY_F10));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::F11, KEY_F11));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::F12, KEY_F12));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::F13, KEY_F13));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::F14, KEY_F14));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::F15, KEY_F15));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::LShift, KEY_LSHIFT));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::RShift, KEY_RSHIFT));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::LControl, KEY_LCONTROL));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::RControl, KEY_RCONTROL));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::LAlt, KEY_LMENU));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::RAlt, KEY_RMENU));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::Menu, KEY_MENU));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::Comma, KEY_COMMA));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::Hyphen, KEY_MINUS));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::Escape, KEY_ESCAPE));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::Equal, KEY_PLUS));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::Semicolon, KEY_OEM_1));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::Slash, KEY_OEM_2));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::Tilde, KEY_OEM_3));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::LBracket, KEY_OEM_4));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::BackSlash, KEY_OEM_5));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::RBracket, KEY_OEM_6));
-	KeyMap.push_back(SKeyMap(sf::Keyboard::Quote, KEY_OEM_7));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::Backspace, KEY_BACK));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::Tab, KEY_TAB));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::Enter, KEY_RETURN));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::Pause, KEY_PAUSE));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::Escape, KEY_ESCAPE));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::Space, KEY_SPACE));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::PageUp, KEY_PRIOR));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::PageDown, KEY_NEXT));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::End, KEY_END));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::Home, KEY_HOME));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::Left, KEY_LEFT));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::Up, KEY_UP));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::Right, KEY_RIGHT));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::Down, KEY_DOWN));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::Insert, KEY_INSERT));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::Delete, KEY_DELETE));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::Num0, KEY_KEY_0));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::Num1, KEY_KEY_1));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::Num2, KEY_KEY_2));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::Num3, KEY_KEY_3));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::Num4, KEY_KEY_4));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::Num5, KEY_KEY_5));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::Num6, KEY_KEY_6));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::Num7, KEY_KEY_7));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::Num8, KEY_KEY_8));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::Num9, KEY_KEY_9));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::A, KEY_KEY_A));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::B, KEY_KEY_B));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::C, KEY_KEY_C));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::D, KEY_KEY_D));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::E, KEY_KEY_E));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::F, KEY_KEY_F));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::G, KEY_KEY_G));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::H, KEY_KEY_H));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::I, KEY_KEY_I));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::J, KEY_KEY_J));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::K, KEY_KEY_K));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::L, KEY_KEY_L));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::M, KEY_KEY_M));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::N, KEY_KEY_N));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::O, KEY_KEY_O));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::P, KEY_KEY_P));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::Q, KEY_KEY_Q));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::R, KEY_KEY_R));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::S, KEY_KEY_S));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::T, KEY_KEY_T));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::U, KEY_KEY_U));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::V, KEY_KEY_V));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::W, KEY_KEY_W));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::X, KEY_KEY_X));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::Y, KEY_KEY_Y));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::Z, KEY_KEY_Z));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::LSystem, KEY_LWIN));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::RSystem, KEY_RWIN));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::Numpad0, KEY_NUMPAD0));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::Numpad1, KEY_NUMPAD1));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::Numpad2, KEY_NUMPAD2));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::Numpad3, KEY_NUMPAD3));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::Numpad4, KEY_NUMPAD4));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::Numpad5, KEY_NUMPAD5));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::Numpad6, KEY_NUMPAD6));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::Numpad7, KEY_NUMPAD7));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::Numpad8, KEY_NUMPAD8));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::Numpad9, KEY_NUMPAD9));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::Multiply, KEY_MULTIPLY));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::Period, KEY_PERIOD));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::Add, KEY_ADD));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::Subtract, KEY_SUBTRACT));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::Divide, KEY_DIVIDE));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::Enter, KEY_RETURN));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::Period, KEY_PERIOD));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::F1,  KEY_F1));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::F2,  KEY_F2));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::F3,  KEY_F3));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::F4,  KEY_F4));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::F5,  KEY_F5));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::F6,  KEY_F6));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::F7,  KEY_F7));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::F8,  KEY_F8));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::F9,  KEY_F9));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::F10, KEY_F10));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::F11, KEY_F11));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::F12, KEY_F12));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::F13, KEY_F13));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::F14, KEY_F14));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::F15, KEY_F15));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::LShift, KEY_LSHIFT));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::RShift, KEY_RSHIFT));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::LControl, KEY_LCONTROL));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::RControl, KEY_RCONTROL));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::LAlt, KEY_LMENU));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::RAlt, KEY_RMENU));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::Menu, KEY_MENU));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::Comma, KEY_COMMA));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::Hyphen, KEY_MINUS));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::Escape, KEY_ESCAPE));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::Equal, KEY_PLUS));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::Semicolon, KEY_OEM_1));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::Slash, KEY_OEM_2));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::LBracket, KEY_OEM_4));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::Backslash, KEY_OEM_5));
+	KeyMap.push_back(SKeyMap(sf::Keyboard::Key::RBracket, KEY_OEM_6));
 
 	KeyMap.sort();
 }
