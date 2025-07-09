@@ -138,10 +138,10 @@
 
 #if defined(__ANDROID__)
 #define _IRR_ANDROID_PLATFORM_
-#if !defined(_IRR_COMPILE_WITH_SDL_DEVICE_)
+//#if !defined(_IRR_COMPILE_WITH_SDL_DEVICE_)
 #define _IRR_COMPILE_WITH_ANDROID_DEVICE_
 #define _IRR_COMPILE_ANDROID_ASSET_READER_
-#endif
+//#endif
 #define NO_IRR_COMPILE_WITH_OPENGL_
 #endif
 
@@ -157,9 +157,12 @@
 #define _IRR_LINUX_PLATFORM_
 #endif
 #define _IRR_POSIX_API_
-#if !defined(_IRR_COMPILE_WITH_SDL_DEVICE_)
+//#if !defined(_IRR_COMPILE_WITH_SDL_DEVICE_)
 #define _IRR_COMPILE_WITH_X11_DEVICE_
-#endif
+#define NO_IRR_COMPILE_WITH_OGLES1_
+#define NO_IRR_COMPILE_WITH_OGLES2_
+#define NO_IRR_COMPILE_WITH_WEBGL1_
+//#endif
 #endif
 
 
@@ -238,7 +241,8 @@ define out. */
 #if defined(_IRR_COMPILE_WITH_OPENGL_)
 	#if defined(_IRR_COMPILE_WITH_SDL_DEVICE_)
 		#define _IRR_OPENGL_USE_EXTPOINTER_
-	#elif defined(_IRR_COMPILE_WITH_WINDOWS_DEVICE_)
+	#endif
+	#if defined(_IRR_COMPILE_WITH_WINDOWS_DEVICE_)
 		#define _IRR_OPENGL_USE_EXTPOINTER_
 		#define _IRR_COMPILE_WITH_WGL_MANAGER_
 	#elif defined(_IRR_COMPILE_WITH_X11_DEVICE_)
@@ -275,7 +279,8 @@ Depending on platform you may have to enable _IRR_OGLES1_USE_KHRONOS_API_HEADERS
 #if !defined(_IRR_IOS_PLATFORM_)
 #define _IRR_OGLES1_USE_EXTPOINTER_
 #endif
-#elif defined(_IRR_COMPILE_WITH_WINDOWS_DEVICE_) || defined(_IRR_COMPILE_WITH_X11_DEVICE_) || defined(_IRR_COMPILE_WITH_ANDROID_DEVICE_)
+#endif
+#if defined(_IRR_COMPILE_WITH_WINDOWS_DEVICE_) || defined(_IRR_COMPILE_WITH_X11_DEVICE_) || defined(_IRR_COMPILE_WITH_ANDROID_DEVICE_)
 #define _IRR_OGLES1_USE_EXTPOINTER_
 #ifndef _IRR_COMPILE_WITH_EGL_MANAGER_
 #define _IRR_COMPILE_WITH_EGL_MANAGER_
@@ -311,7 +316,8 @@ define out. */
 #if !defined(_IRR_IOS_PLATFORM_)
 #define _IRR_OGLES2_USE_EXTPOINTER_
 #endif
-#elif defined(_IRR_COMPILE_WITH_WINDOWS_DEVICE_) || defined(_IRR_COMPILE_WITH_X11_DEVICE_) || defined(_IRR_COMPILE_WITH_ANDROID_DEVICE_) || defined(__EMSCRIPTEN__)
+#endif
+#if defined(_IRR_COMPILE_WITH_WINDOWS_DEVICE_) || defined(_IRR_COMPILE_WITH_X11_DEVICE_) || defined(_IRR_COMPILE_WITH_ANDROID_DEVICE_) || defined(__EMSCRIPTEN__)
 #define _IRR_OGLES2_USE_EXTPOINTER_
 #ifndef _IRR_COMPILE_WITH_EGL_MANAGER_
 #define _IRR_COMPILE_WITH_EGL_MANAGER_
