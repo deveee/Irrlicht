@@ -12,6 +12,8 @@
 #include "irrArray.h"
 #include "IOSOperator.h"
 
+#include <vector>
+
 namespace irr
 {
 namespace gui
@@ -199,7 +201,12 @@ namespace gui
 		core::rect<s32> CurrentTextRect, FrameRect; // temporary values
 
 	private:
+		core::stringw applyBidiReordering(const core::stringw& text);
+		s32 visualCursorPos(s32 logicalPos);
+
 		bool IsSDLDevice;
+		std::vector<s32> RtlCharPos;
+		std::vector<bool> CharIsRtl;
 	};
 
 

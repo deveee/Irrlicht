@@ -16,6 +16,8 @@
 #include "CIrrDeviceSDL.h"
 #endif
 
+#include <SheenBidi.h>
+
 
 /*
 	todo:
@@ -30,6 +32,105 @@ namespace irr
 {
 namespace gui
 {
+
+s32 CGUIEditBox::visualCursorPos(s32 logicalPos)
+{
+	if (Text.size() > 0 && logicalPos >= Text.size()) {
+		if (CharIsRtl[0]) {
+			return 0;
+		} else {
+			return Text.size();
+		}
+	}
+	
+	if (logicalPos >= 0 && logicalPos < (s32)RtlCharPos.size()) {
+		if (CharIsRtl[0])
+			return RtlCharPos[logicalPos] + 1;
+		else
+			return RtlCharPos[logicalPos];
+	}
+	
+	if (Text.size() == 0)
+		return 0;
+	
+	return logicalPos;
+}
+
+core::stringw CGUIEditBox::applyBidiReordering(const core::stringw& text)
+{
+	RtlCharPos.clear();
+	CharIsRtl.clear();
+	
+	if (text.empty())
+		return text;
+	
+	SBCodepointSequence codepointSequence;
+	codepointSequence.stringEncoding = SBStringEncodingUTF32;
+	codepointSequence.stringBuffer = (void*)text.c_str();
+	codepointSequence.stringLength = text.size();
+	
+	SBAlgorithmRef bidiAlgorithm = SBAlgorithmCreate(&codepointSequence);
+	
+	if (!bidiAlgorithm)
+		return text;
+	
+	SBParagraphRef paragraph = SBAlgorithmCreateParagraph(bidiAlgorithm, 0, 
+			text.size(), SBLevelDefaultLTR);
+	
+	if (!paragraph) {
+		SBAlgorithmRelease(bidiAlgorithm);
+		return text;
+	}
+	
+	SBLineRef line = SBParagraphCreateLine(paragraph, 0, text.size());
+	
+	if (!line) {
+		SBParagraphRelease(paragraph);
+		SBAlgorithmRelease(bidiAlgorithm);
+		return text;
+	}
+	
+	SBUInteger runCount = SBLineGetRunCount(line);
+	const SBRun *runsPtr = SBLineGetRunsPtr(line);
+	
+	core::stringw result;
+	result.reserve(text.size());
+	RtlCharPos.resize(text.size());
+	CharIsRtl.resize(text.size());
+	s32 visualPos = 0;
+	
+	for (SBUInteger i = 0; i < runCount; i++) {
+		const SBRun *run = runsPtr + i;
+		bool isRTL = (run->level & 1) != 0;
+		
+		if (isRTL) {
+			for (SBInteger j = run->length - 1; j >= 0; j--) {
+				SBUInteger index = run->offset + j;
+				result += text[index];
+				//RtlCharPos.push_back(index);
+				RtlCharPos[index] = visualPos;
+				CharIsRtl[index] = true;
+				visualPos++;
+			}
+		} else {
+			for (SBUInteger j = 0; j < run->length; j++) {
+				SBUInteger index = run->offset + j;
+				result += text[index];
+				//RtlCharPos.push_back(index);
+				RtlCharPos[index] = visualPos;
+				CharIsRtl[index] = false;
+				visualPos++;
+			}
+		}
+	}
+	
+	SBLineRelease(line);
+	SBParagraphRelease(paragraph);
+	SBAlgorithmRelease(bidiAlgorithm);
+	
+	return result;
+}
+
 
 //! constructor
 CGUIEditBox::CGUIEditBox(const wchar_t* text, bool border,
@@ -926,9 +1027,6 @@ void CGUIEditBox::draw()
 
 	IGUIFont* font = getActiveFont();
 
-	s32 cursorLine = 0;
-	s32 charcursorpos = 0;
-
 	if (font)
 	{
 		if (LastBreakFont != font)
@@ -938,7 +1036,8 @@ void CGUIEditBox::draw()
 
 		// calculate cursor pos
 
-		core::stringw *txtLine = &Text;
+		core::stringw TextBidi = applyBidiReordering(Text);
+		const core::stringw *txtLine = &TextBidi;
 		s32 startPos = 0;
 
 		core::stringw s, s2;
@@ -956,7 +1055,7 @@ void CGUIEditBox::draw()
 		const bool prevOver = OverrideColorEnabled;
 		const video::SColor prevColor = OverrideColor;
 
-		if (Text.size())
+		if (TextBidi.size())
 		{
 			if (!isEnabled() && !OverrideColorEnabled)
 			{
@@ -982,10 +1081,10 @@ void CGUIEditBox::draw()
 						BrokenText.clear();
 						BrokenText.push_back(core::stringw());
 					}
-					if (BrokenText[0].size() != Text.size())
+					if (BrokenText[0].size() != TextBidi.size())
 					{
-						BrokenText[0] = Text;
-						for (u32 q = 0; q < Text.size(); ++q)
+						BrokenText[0] = TextBidi;
+						for (u32 q = 0; q < TextBidi.size(); ++q)
 						{
 							BrokenText[0] [q] = PasswordChar;
 						}
@@ -995,7 +1094,7 @@ void CGUIEditBox::draw()
 				}
 				else
 				{
-					txtLine = ml ? &BrokenText[i] : &Text;
+					txtLine = ml ? &BrokenText[i] : &TextBidi;
 					startPos = ml ? BrokenTextPositions[i] : 0;
 				}
 
@@ -1044,7 +1143,7 @@ void CGUIEditBox::draw()
 					if (s.size())
 						font->draw(s, before_rect,
 							OverrideColorEnabled ? OverrideColor : skin->getColor(EGDC_BUTTON_TEXT),
-							false, true, &localClipRect);
+							false, true, &localClipRect, false);
 
 					// draw marked text
 					s = txtLine->subString(markStartPos, markEndPos - markStartPos);
@@ -1052,7 +1151,7 @@ void CGUIEditBox::draw()
 					if (s.size())
 						font->draw(s, markRect,
 							OverrideColorEnabled ? OverrideColor : skin->getColor(EGDC_HIGH_LIGHT_TEXT),
-							false, true, &localClipRect);
+							false, true, &localClipRect, false);
 
 					// draw text after marked
 					core::rect<s32> after_rect = CurrentTextRect;
@@ -1062,12 +1161,12 @@ void CGUIEditBox::draw()
 					if (s.size())
 						font->draw(s, after_rect,
 							OverrideColorEnabled ? OverrideColor : skin->getColor(EGDC_BUTTON_TEXT),
-							false, true, &localClipRect);
+							false, true, &localClipRect, false);
 				} else {
 					// draw normal text
 					font->draw(*txtLine, CurrentTextRect,
 						OverrideColorEnabled ? OverrideColor : skin->getColor(EGDC_BUTTON_TEXT),
-						false, true, &localClipRect);
+						false, true, &localClipRect, false);
 				}
 			}
 
@@ -1079,15 +1178,19 @@ void CGUIEditBox::draw()
 		// draw cursor
 		if ( isEnabled() )
 		{
+			s32 cursorLine = 0;
+			s32 charcursorpos = 0;
+			s32 rtlCursorPos = visualCursorPos(CursorPos);
+			
 			if (WordWrap || MultiLine)
 			{
-				cursorLine = getLineFromPos(CursorPos);
+				cursorLine = getLineFromPos(rtlCursorPos);
 				txtLine = &BrokenText[cursorLine];
 				startPos = BrokenTextPositions[cursorLine];
 			}
-			s = txtLine->subString(0,CursorPos-startPos);
+			s = txtLine->subString(0,rtlCursorPos-startPos);
 			charcursorpos = font->getDimension(s.c_str()).Width +
-				font->getKerningWidth(CursorChar.c_str(), CursorPos-startPos > 0 ? &((*txtLine)[CursorPos-startPos-1]) : 0);
+				font->getKerningWidth(CursorChar.c_str(), rtlCursorPos-startPos > 0 ? &((*txtLine)[rtlCursorPos-startPos-1]) : 0);
 
 			if (focus && (CursorBlinkTime == 0 || (os::Timer::getTime() - BlinkStartTime) % (2*CursorBlinkTime) < CursorBlinkTime))
 			{
@@ -1096,7 +1199,7 @@ void CGUIEditBox::draw()
 
 				if ( OverwriteMode )
 				{
-					core::stringw character = Text.subString(CursorPos,1);
+					core::stringw character = TextBidi.subString(rtlCursorPos,1);
 					s32 mend = font->getDimension(character.c_str()).Width;
 					//Make sure the cursor box has at least some width to it
 					if ( mend <= 0 )
@@ -1105,13 +1208,13 @@ void CGUIEditBox::draw()
 					skin->draw2DRectangle(this, skin->getColor(EGDC_HIGH_LIGHT), CurrentTextRect, &localClipRect);
 					font->draw(character, CurrentTextRect,
 								OverrideColorEnabled ? OverrideColor : skin->getColor(EGDC_HIGH_LIGHT_TEXT),
-								false, true, &localClipRect);
+								false, true, &localClipRect, false);
 				}
 				else
 				{
 					font->draw(CursorChar, CurrentTextRect,
 						OverrideColorEnabled ? OverrideColor : skin->getColor(EGDC_BUTTON_TEXT),
-						false, true, &localClipRect);
+						false, true, &localClipRect, false);
 				}
 			}
 		}

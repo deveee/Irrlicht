@@ -65,7 +65,7 @@ emscripten: EMSCRIPTEN=1
 ###############
 #Compiler flags
 
-CXXINCS = -I../../include
+CXXINCS = -I../../include -Isheenbidi/Headers
 CPPFLAGS += $(CXXINCS) -DIRRLICHT_EXPORTS=1
 CXXFLAGS += -Wall -pipe -fno-exceptions -fno-rtti
 #CXXFLAGS += -std=gnu++11 -U__STRICT_ANSI__
