@@ -33,9 +33,9 @@ namespace irr
 namespace gui
 {
 
-s32 CGUIEditBox::visualCursorPos(s32 logicalPos)
+s32 CGUIEditBox::visualCursorPos(s32 pos)
 {
-	if (Text.size() > 0 && logicalPos >= Text.size()) {
+	if (Text.size() > 0 && pos >= Text.size()) {
 		if (CharIsRtl[0]) {
 			return 0;
 		} else {
@@ -43,17 +43,33 @@ s32 CGUIEditBox::visualCursorPos(s32 logicalPos)
 		}
 	}
 	
-	if (logicalPos >= 0 && logicalPos < (s32)RtlCharPos.size()) {
+	if (pos >= 0 && pos < (s32)RtlCharPos.size()) {
 		if (CharIsRtl[0])
-			return RtlCharPos[logicalPos] + 1;
+			return RtlCharPos[pos] + 1;
 		else
-			return RtlCharPos[logicalPos];
+			return RtlCharPos[pos];
 	}
 	
 	if (Text.size() == 0)
 		return 0;
 	
-	return logicalPos;
+	return pos;
+}
+
+s32 CGUIEditBox::logicalCursorPos(s32 pos)
+{
+	if (pos >= (s32)Text.size())
+		return Text.size();
+	
+	if (pos < 0)
+		return 0;
+	
+	for (u32 i = 0; i < RtlCharPos.size(); i++) {
+		if (RtlCharPos[i] == pos)
+			return i;
+	}
+	
+	return pos;
 }
 
 core::stringw CGUIEditBox::applyBidiReordering(const core::stringw& text)
@@ -1184,22 +1200,30 @@ void CGUIEditBox::draw()
 			
 			if (WordWrap || MultiLine)
 			{
-				cursorLine = getLineFromPos(rtlCursorPos);
+				cursorLine = getLineFromPos(CursorPos);
 				txtLine = &BrokenText[cursorLine];
 				startPos = BrokenTextPositions[cursorLine];
 			}
-			s = txtLine->subString(0,rtlCursorPos-startPos);
+			
+			s32 visualPosInLine = rtlCursorPos - startPos;
+			
+			if (CharIsRtl.size() > 0 && CharIsRtl[0] && visualPosInLine > 0)
+				visualPosInLine--;
+			
+			s = txtLine->subString(0, visualPosInLine);
+			
 			charcursorpos = font->getDimension(s.c_str()).Width +
-				font->getKerningWidth(CursorChar.c_str(), rtlCursorPos-startPos > 0 ? &((*txtLine)[rtlCursorPos-startPos-1]) : 0);
-
+				font->getKerningWidth(CursorChar.c_str(), 
+					visualPosInLine > 0 ? &((*txtLine)[visualPosInLine-1]) : 0);
+			
 			if (focus && (CursorBlinkTime == 0 || (os::Timer::getTime() - BlinkStartTime) % (2*CursorBlinkTime) < CursorBlinkTime))
 			{
 				setTextRect(cursorLine);
 				CurrentTextRect.UpperLeftCorner.X += charcursorpos;
-
+				
 				if ( OverwriteMode )
 				{
-					core::stringw character = TextBidi.subString(rtlCursorPos,1);
+					core::stringw character = txtLine->subString(visualPosInLine, 1);
 					s32 mend = font->getDimension(character.c_str()).Width;
 					//Make sure the cursor box has at least some width to it
 					if ( mend <= 0 )
@@ -1416,15 +1440,22 @@ s32 CGUIEditBox::getCursorPos(s32 x, s32 y)
 
 	if ( !txtLine )
 		return 0;
-
-	s32 idx = font->getCharacterFromPos(txtLine->c_str(), x - CurrentTextRect.UpperLeftCorner.X);
-
-	// click was on or left of the line
-	if (idx != -1)
-		return idx + startPos;
-
-	// click was off the right edge of the line, go to end.
-	return txtLine->size() + startPos;
+	
+	core::stringw TextBidi = applyBidiReordering(*txtLine);
+	s32 visualPos = font->getCharacterFromPos(TextBidi.c_str(), x - CurrentTextRect.UpperLeftCorner.X);
+	
+	s32 logicalPos;
+	if (visualPos == -1) {
+		logicalPos = txtLine->size();
+	} else {
+		logicalPos = logicalCursorPos(visualPos + startPos) - startPos;
+		if (logicalPos < 0)
+			logicalPos = 0;
+		if (logicalPos > (s32)txtLine->size())
+			logicalPos = txtLine->size();
+	}
+	
+	return logicalPos + startPos;
 }
 
 

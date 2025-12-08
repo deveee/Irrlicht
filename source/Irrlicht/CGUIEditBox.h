@@ -202,7 +202,8 @@ namespace gui
 
 	private:
 		core::stringw applyBidiReordering(const core::stringw& text);
-		s32 visualCursorPos(s32 logicalPos);
+		s32 visualCursorPos(s32 pos);
+		s32 logicalCursorPos(s32 pos);
 
 		bool IsSDLDevice;
 		std::vector<s32> RtlCharPos;
