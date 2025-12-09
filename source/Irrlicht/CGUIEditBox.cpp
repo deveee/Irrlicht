@@ -46,7 +46,7 @@ s32 TextBidiData::visualCursorPos(s32 pos)
 	}
 	
 	if (pos >= 0 && pos < (s32)RtlCharPos.size()) {
-		if (CharIsRtl[0])
+		if (CharIsRtl[pos])
 			return RtlCharPos[pos] + 1;
 		else
 			return RtlCharPos[pos];
@@ -1121,30 +1121,44 @@ void CGUIEditBox::draw()
 					s32 mbegin = 0, mend = 0;
 					s32 markStartPos = 0;
 					s32 markEndPos = txtLineBidi.size();
-
+					s32 visualMarkBegin = 0;
+					s32 visualMarkEnd = txtLineBidi.size();
+				
 					if (i == hlineStart)
 					{
 						// highlight start is on this line
-						s = txtLineBidi.subString(0, realmbgn - startPos);
+						s32 logicalPosInLine = realmbgn - startPos;
+						visualMarkBegin = textBidi.visualCursorPos(logicalPosInLine);
+						
+						s = txtLineBidi.subString(0, visualMarkBegin);
 						mbegin = font->getDimension(s.c_str()).Width;
-
+				
 						// deal with kerning
-						mbegin += font->getKerningWidth(
-							&(txtLineBidi[realmbgn - startPos]),
-							realmbgn - startPos > 0 ? &(txtLineBidi[realmbgn - startPos - 1]) : 0);
-
-						markStartPos = realmbgn - startPos;
+						const wchar_t* thisLetter = visualMarkBegin < (s32)txtLineBidi.size() ? &(txtLineBidi[visualMarkBegin]) : 0;
+						const wchar_t* previousLetter = visualMarkBegin > 0 ? &(txtLineBidi[visualMarkBegin - 1]) : 0;
+						mbegin += font->getKerningWidth(thisLetter, previousLetter);
+				
+						markStartPos = visualMarkBegin;
 					}
+					
 					if (i == hlineStart + hlineCount - 1)
 					{
 						// highlight end is on this line
-						s2 = txtLineBidi.subString(0, realmend - startPos);
+						s32 logicalPosInLine = realmend - startPos;
+						visualMarkEnd = textBidi.visualCursorPos(logicalPosInLine);
+						
+						s2 = txtLineBidi.subString(0, visualMarkEnd);
 						mend = font->getDimension(s2.c_str()).Width;
-						markEndPos = (s32)s2.size();
+						markEndPos = visualMarkEnd;
 					}
 					else
 						mend = font->getDimension(txtLineBidi.c_str()).Width;
-
+				
+					if (markStartPos > markEndPos) {
+						core::swap(markStartPos, markEndPos);
+						core::swap(mbegin, mend);
+					}
+				
 					core::rect<s32> markRect = CurrentTextRect;
 					markRect.UpperLeftCorner.X += mbegin;
 					markRect.LowerRightCorner.X = markRect.UpperLeftCorner.X + mend - mbegin;
