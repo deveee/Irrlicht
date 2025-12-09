@@ -1222,16 +1222,15 @@ void CGUIEditBox::draw()
 			
 			TextBidiData textBidi = applyBidiReordering(*txtLine);
 			s32 rtlCursorPos = textBidi.visualCursorPos(CursorPos - startPos);
-			s32 visualPosInLine = rtlCursorPos;
 			
-			if (textBidi.CharIsRtl.size() > 0 && textBidi.CharIsRtl[0] && visualPosInLine > 0)
-				visualPosInLine--;
+			if (textBidi.CharIsRtl.size() > 0 && textBidi.CharIsRtl[0] && rtlCursorPos > 0)
+				rtlCursorPos--;
 			
-			s = textBidi.TextBidi.subString(0, visualPosInLine);
+			s = textBidi.TextBidi.subString(0, rtlCursorPos);
 			
 			charcursorpos = font->getDimension(s.c_str()).Width +
 				font->getKerningWidth(CursorChar.c_str(), 
-					visualPosInLine > 0 ? &(textBidi.TextBidi[visualPosInLine-1]) : 0);
+					rtlCursorPos > 0 ? &(textBidi.TextBidi[rtlCursorPos-1]) : 0);
 			
 			if (focus && (CursorBlinkTime == 0 || (os::Timer::getTime() - BlinkStartTime) % (2*CursorBlinkTime) < CursorBlinkTime))
 			{
@@ -1240,7 +1239,7 @@ void CGUIEditBox::draw()
 				
 				if ( OverwriteMode )
 				{
-					core::stringw character = textBidi.TextBidi.subString(visualPosInLine, 1);
+					core::stringw character = textBidi.TextBidi.subString(rtlCursorPos, 1);
 					s32 mend = font->getDimension(character.c_str()).Width;
 					//Make sure the cursor box has at least some width to it
 					if ( mend <= 0 )
@@ -1765,6 +1764,7 @@ void CGUIEditBox::calculateScrollPos()
 	s32 cursLine = getLineFromPos(CursorPos);
 	if ( cursLine < 0 )
 		return;
+
 	setTextRect(cursLine);
 	const bool hasBrokenText = MultiLine || WordWrap;
 
@@ -1775,11 +1775,19 @@ void CGUIEditBox::calculateScrollPos()
 		// get cursor area
 		irr::u32 cursorWidth = font->getDimension(CursorChar.c_str()).Width;
 		core::stringw *txtLine = hasBrokenText ? &BrokenText[cursLine] : &Text;
-		s32 cPos = hasBrokenText ? CursorPos - BrokenTextPositions[cursLine] : CursorPos;	// column
-		s32 cStart = font->getDimension(txtLine->subString(0, cPos).c_str()).Width;		// pixels from text-start
+		s32 logicalCPos = hasBrokenText ? CursorPos - BrokenTextPositions[cursLine] : CursorPos;
+		
+		s32 startPos = hasBrokenText ? BrokenTextPositions[cursLine] : 0;
+		TextBidiData textBidi = applyBidiReordering(*txtLine);
+		s32 rtlCursorPos = textBidi.visualCursorPos(logicalCPos);
+		
+		if (textBidi.CharIsRtl.size() > 0 && textBidi.CharIsRtl[0] && rtlCursorPos > 0)
+			rtlCursorPos--;
+		
+		s32 cStart = font->getDimension(textBidi.TextBidi.subString(0, rtlCursorPos).c_str()).Width;
 		s32 cEnd = cStart + cursorWidth;
-		s32 txtWidth = font->getDimension(txtLine->c_str()).Width;
-
+		s32 txtWidth = font->getDimension(textBidi.TextBidi.c_str()).Width;
+		
 		if ( txtWidth < FrameRect.getWidth() )
 		{
 			// TODO: Needs a clean left and right gap removal depending on HAlign, similar to vertical scrolling tests for top/bottom.
