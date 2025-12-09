@@ -18,6 +18,17 @@ namespace irr
 {
 namespace gui
 {
+	struct TextBidiData
+	{
+		core::stringw Text;
+		core::stringw TextBidi;
+		std::vector<s32> RtlCharPos;
+		std::vector<bool> CharIsRtl;
+
+		s32 visualCursorPos(s32 pos);
+		s32 logicalCursorPos(s32 pos);
+	};
+
 	class CGUIEditBox : public IGUIEditBox
 	{
 	public:
@@ -201,13 +212,10 @@ namespace gui
 		core::rect<s32> CurrentTextRect, FrameRect; // temporary values
 
 	private:
-		core::stringw applyBidiReordering(const core::stringw& text);
-		s32 visualCursorPos(s32 pos, const core::stringw& text);
-		s32 logicalCursorPos(s32 pos, const core::stringw& text);
+		TextBidiData applyBidiReordering(const core::stringw& text);
 
 		bool IsSDLDevice;
-		std::vector<s32> RtlCharPos;
-		std::vector<bool> CharIsRtl;
+
 	};
 
 

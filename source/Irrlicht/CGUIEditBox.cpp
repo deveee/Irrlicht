@@ -33,17 +33,16 @@ namespace irr
 namespace gui
 {
 
-s32 CGUIEditBox::visualCursorPos(s32 pos, const core::stringw& text)
+s32 TextBidiData::visualCursorPos(s32 pos)
 {
-	if (text.size() == 0)
+	if (TextBidi.size() == 0)
 		return 0;
 
-	if (text.size() > 0 && pos >= text.size()) {
-		if (CharIsRtl[0]) {
+	if (TextBidi.size() > 0 && pos >= (s32)TextBidi.size()) {
+		if (CharIsRtl[0])
 			return 0;
-		} else {
-			return text.size();
-		}
+		else
+			return TextBidi.size();
 	}
 	
 	if (pos >= 0 && pos < (s32)RtlCharPos.size()) {
@@ -56,14 +55,18 @@ s32 CGUIEditBox::visualCursorPos(s32 pos, const core::stringw& text)
 	return pos;
 }
 
-s32 CGUIEditBox::logicalCursorPos(s32 pos, const core::stringw& text)
+s32 TextBidiData::logicalCursorPos(s32 pos)
 {
-	if (pos >= (s32)text.size())
-		return text.size();
-	
-	if (pos < 0)
-		return 0;
-	
+	if (pos < 0) 
+		return TextBidi.size();
+
+	if (TextBidi.size() > 0 && pos >= (s32)TextBidi.size()) {
+		if (CharIsRtl[0])
+			return 0;
+		else
+			return TextBidi.size();
+	}
+		
 	for (u32 i = 0; i < RtlCharPos.size(); i++) {
 		if (RtlCharPos[i] == pos)
 			return i;
@@ -72,13 +75,14 @@ s32 CGUIEditBox::logicalCursorPos(s32 pos, const core::stringw& text)
 	return pos;
 }
 
-core::stringw CGUIEditBox::applyBidiReordering(const core::stringw& text)
+TextBidiData CGUIEditBox::applyBidiReordering(const core::stringw& text)
 {
-	RtlCharPos.clear();
-	CharIsRtl.clear();
+	TextBidiData data;
 	
 	if (text.empty())
-		return text;
+		return data;
+	
+	data.Text = text;
 
 	SBCodepointSequence codepointSequence;
 	codepointSequence.stringEncoding = SBStringEncodingUTF32;
@@ -88,14 +92,14 @@ core::stringw CGUIEditBox::applyBidiReordering(const core::stringw& text)
 	SBAlgorithmRef bidiAlgorithm = SBAlgorithmCreate(&codepointSequence);
 	
 	if (!bidiAlgorithm)
-		return text;
+		return data;
 
 	SBParagraphRef paragraph = SBAlgorithmCreateParagraph(bidiAlgorithm, 0, 
 			text.size(), SBLevelDefaultLTR);
 	
 	if (!paragraph) {
 		SBAlgorithmRelease(bidiAlgorithm);
-		return text;
+		return data;
 	}
 
 	SBLineRef line = SBParagraphCreateLine(paragraph, 0, text.size());
@@ -103,16 +107,15 @@ core::stringw CGUIEditBox::applyBidiReordering(const core::stringw& text)
 	if (!line) {
 		SBParagraphRelease(paragraph);
 		SBAlgorithmRelease(bidiAlgorithm);
-		return text;
+		return data;
 	}
 
 	SBUInteger runCount = SBLineGetRunCount(line);
 	const SBRun *runsPtr = SBLineGetRunsPtr(line);
 	
-	core::stringw result;
-	result.reserve(text.size());
-	RtlCharPos.resize(text.size());
-	CharIsRtl.resize(text.size());
+	data.TextBidi.reserve(text.size());
+	data.RtlCharPos.resize(text.size());
+	data.CharIsRtl.resize(text.size());
 	s32 visualPos = 0;
 	
 	for (SBUInteger i = 0; i < runCount; i++) {
@@ -122,19 +125,17 @@ core::stringw CGUIEditBox::applyBidiReordering(const core::stringw& text)
 		if (isRTL) {
 			for (SBInteger j = run->length - 1; j >= 0; j--) {
 				SBUInteger index = run->offset + j;
-				result += text[index];
-				//RtlCharPos.push_back(index);
-				RtlCharPos[index] = visualPos;
-				CharIsRtl[index] = true;
+				data.TextBidi += text[index];
+				data.RtlCharPos[index] = visualPos;
+				data.CharIsRtl[index] = true;
 				visualPos++;
 			}
 		} else {
 			for (SBUInteger j = 0; j < run->length; j++) {
 				SBUInteger index = run->offset + j;
-				result += text[index];
-				//RtlCharPos.push_back(index);
-				RtlCharPos[index] = visualPos;
-				CharIsRtl[index] = false;
+				data.TextBidi += text[index];
+				data.RtlCharPos[index] = visualPos;
+				data.CharIsRtl[index] = false;
 				visualPos++;
 			}
 		}
@@ -144,7 +145,7 @@ core::stringw CGUIEditBox::applyBidiReordering(const core::stringw& text)
 	SBParagraphRelease(paragraph);
 	SBAlgorithmRelease(bidiAlgorithm);
 
-	return result;
+	return data;
 }
 
 
@@ -1111,7 +1112,8 @@ void CGUIEditBox::draw()
 					startPos = ml ? BrokenTextPositions[i] : 0;
 				}
 
-				core::stringw txtLineBidi = applyBidiReordering(*txtLine);
+				TextBidiData textBidi = applyBidiReordering(*txtLine);
+				core::stringw txtLineBidi = textBidi.TextBidi;
 
 				// draw mark and marked text
 				if (focus && MarkBegin != MarkEnd && i >= hlineStart && i < hlineStart + hlineCount)
@@ -1204,18 +1206,18 @@ void CGUIEditBox::draw()
 				startPos = BrokenTextPositions[cursorLine];
 			}
 			
-			applyBidiReordering(*txtLine);
-			s32 rtlCursorPos = visualCursorPos(CursorPos - startPos, *txtLine);
+			TextBidiData textBidi = applyBidiReordering(*txtLine);
+			s32 rtlCursorPos = textBidi.visualCursorPos(CursorPos - startPos);
 			s32 visualPosInLine = rtlCursorPos;
 			
-			if (CharIsRtl.size() > 0 && CharIsRtl[0] && visualPosInLine > 0)
+			if (textBidi.CharIsRtl.size() > 0 && textBidi.CharIsRtl[0] && visualPosInLine > 0)
 				visualPosInLine--;
 			
-			s = txtLine->subString(0, visualPosInLine);
+			s = textBidi.TextBidi.subString(0, visualPosInLine);
 			
 			charcursorpos = font->getDimension(s.c_str()).Width +
 				font->getKerningWidth(CursorChar.c_str(), 
-					visualPosInLine > 0 ? &((*txtLine)[visualPosInLine-1]) : 0);
+					visualPosInLine > 0 ? &(textBidi.TextBidi[visualPosInLine-1]) : 0);
 			
 			if (focus && (CursorBlinkTime == 0 || (os::Timer::getTime() - BlinkStartTime) % (2*CursorBlinkTime) < CursorBlinkTime))
 			{
@@ -1224,7 +1226,7 @@ void CGUIEditBox::draw()
 				
 				if ( OverwriteMode )
 				{
-					core::stringw character = txtLine->subString(visualPosInLine, 1);
+					core::stringw character = textBidi.TextBidi.subString(visualPosInLine, 1);
 					s32 mend = font->getDimension(character.c_str()).Width;
 					//Make sure the cursor box has at least some width to it
 					if ( mend <= 0 )
@@ -1442,19 +1444,14 @@ s32 CGUIEditBox::getCursorPos(s32 x, s32 y)
 	if ( !txtLine )
 		return 0;
 	
-	core::stringw TextBidi = applyBidiReordering(*txtLine);
-	s32 visualPos = font->getCharacterFromPos(TextBidi.c_str(), x - CurrentTextRect.UpperLeftCorner.X);
+	TextBidiData textBidi = applyBidiReordering(*txtLine);
+	s32 visualPos = font->getCharacterFromPos(textBidi.TextBidi.c_str(), x - CurrentTextRect.UpperLeftCorner.X);
 	
-	s32 logicalPos;
-	if (visualPos == -1) {
+	s32 logicalPos = textBidi.logicalCursorPos(visualPos);
+	if (logicalPos < 0)
+		logicalPos = 0;
+	if (logicalPos > (s32)txtLine->size())
 		logicalPos = txtLine->size();
-	} else {
-		logicalPos = logicalCursorPos(visualPos, *txtLine);
-		if (logicalPos < 0)
-			logicalPos = 0;
-		if (logicalPos > (s32)txtLine->size())
-			logicalPos = txtLine->size();
-	}
 	
 	return logicalPos + startPos;
 }
