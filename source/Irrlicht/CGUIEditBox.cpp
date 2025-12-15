@@ -16,7 +16,7 @@
 #include "CIrrDeviceSDL.h"
 #endif
 
-#include <SheenBidi.h>
+#include <bidi.h>
 
 
 /*
@@ -33,122 +33,6 @@ namespace irr
 namespace gui
 {
 
-s32 TextBidiData::visualCursorPos(s32 pos)
-{
-	if (TextBidi.size() == 0)
-		return 0;
-
-	if (TextBidi.size() > 0 && pos >= (s32)TextBidi.size()) {
-		if (CharIsRtl[0])
-			return 0;
-		else
-			return TextBidi.size();
-	}
-	
-	if (pos >= 0 && pos < (s32)RtlCharPos.size()) {
-		if (CharIsRtl[pos])
-			return RtlCharPos[pos] + 1;
-		else
-			return RtlCharPos[pos];
-	}
-	
-	return pos;
-}
-
-s32 TextBidiData::logicalCursorPos(s32 pos)
-{
-	if (pos < 0) 
-		return TextBidi.size();
-
-	if (TextBidi.size() > 0 && pos >= (s32)TextBidi.size()) {
-		if (CharIsRtl[0])
-			return 0;
-		else
-			return TextBidi.size();
-	}
-		
-	for (u32 i = 0; i < RtlCharPos.size(); i++) {
-		if (RtlCharPos[i] == pos)
-			return i;
-	}
-	
-	return pos;
-}
-
-TextBidiData CGUIEditBox::applyBidiReordering(const core::stringw& text)
-{
-	TextBidiData data;
-	
-	if (text.empty())
-		return data;
-	
-	data.Text = text;
-
-	SBCodepointSequence codepointSequence;
-	codepointSequence.stringEncoding = SBStringEncodingUTF32;
-	codepointSequence.stringBuffer = (void*)text.c_str();
-	codepointSequence.stringLength = text.size();
-	
-	SBAlgorithmRef bidiAlgorithm = SBAlgorithmCreate(&codepointSequence);
-	
-	if (!bidiAlgorithm)
-		return data;
-
-	SBParagraphRef paragraph = SBAlgorithmCreateParagraph(bidiAlgorithm, 0, 
-			text.size(), SBLevelDefaultLTR);
-	
-	if (!paragraph) {
-		SBAlgorithmRelease(bidiAlgorithm);
-		return data;
-	}
-
-	SBLineRef line = SBParagraphCreateLine(paragraph, 0, text.size());
-	
-	if (!line) {
-		SBParagraphRelease(paragraph);
-		SBAlgorithmRelease(bidiAlgorithm);
-		return data;
-	}
-
-	SBUInteger runCount = SBLineGetRunCount(line);
-	const SBRun *runsPtr = SBLineGetRunsPtr(line);
-	
-	data.TextBidi.reserve(text.size());
-	data.RtlCharPos.resize(text.size());
-	data.CharIsRtl.resize(text.size());
-	s32 visualPos = 0;
-	
-	for (SBUInteger i = 0; i < runCount; i++) {
-		const SBRun *run = runsPtr + i;
-		bool isRTL = (run->level & 1) != 0;
-		
-		if (isRTL) {
-			for (SBInteger j = run->length - 1; j >= 0; j--) {
-				SBUInteger index = run->offset + j;
-				data.TextBidi += text[index];
-				data.RtlCharPos[index] = visualPos;
-				data.CharIsRtl[index] = true;
-				visualPos++;
-			}
-		} else {
-			for (SBUInteger j = 0; j < run->length; j++) {
-				SBUInteger index = run->offset + j;
-				data.TextBidi += text[index];
-				data.RtlCharPos[index] = visualPos;
-				data.CharIsRtl[index] = false;
-				visualPos++;
-			}
-		}
-	}
-	
-	SBLineRelease(line);
-	SBParagraphRelease(paragraph);
-	SBAlgorithmRelease(bidiAlgorithm);
-
-	return data;
-}
-
-
 //! constructor
 CGUIEditBox::CGUIEditBox(const wchar_t* text, bool border,
 		IGUIEnvironment* environment, IGUIElement* parent, s32 id,
@@ -157,7 +41,7 @@ CGUIEditBox::CGUIEditBox(const wchar_t* text, bool border,
 	Border(border), Background(true), OverrideColorEnabled(false), MarkBegin(0), MarkEnd(0),
 	OverrideColor(video::SColor(101,255,255,255)), OverrideFont(0), LastBreakFont(0),
 	Operator(0), BlinkStartTime(0), CursorBlinkTime(350), CursorChar(L"_"), CursorPos(0), HScrollPos(0), VScrollPos(0), Max(0),
-	WordWrap(false), MultiLine(false), AutoScroll(true), PasswordBox(false),
+	WordWrap(false), MultiLine(true), AutoScroll(true), PasswordBox(false),
 	PasswordChar(L'*'), HAlign(EGUIA_UPPERLEFT), VAlign(EGUIA_CENTER),
 	CurrentTextRect(0,0,1,1), FrameRect(rectangle), IsSDLDevice(false)
 {
@@ -1112,7 +996,7 @@ void CGUIEditBox::draw()
 					startPos = ml ? BrokenTextPositions[i] : 0;
 				}
 
-				TextBidiData textBidi = applyBidiReordering(*txtLine);
+				core::TextBidiData textBidi = core::applyBidiReordering(*txtLine);
 				core::stringw txtLineBidi = textBidi.TextBidi;
 
 				// draw mark and marked text
@@ -1220,7 +1104,7 @@ void CGUIEditBox::draw()
 				startPos = BrokenTextPositions[cursorLine];
 			}
 			
-			TextBidiData textBidi = applyBidiReordering(*txtLine);
+			core::TextBidiData textBidi = core::applyBidiReordering(*txtLine);
 			s32 rtlCursorPos = textBidi.visualCursorPos(CursorPos - startPos);
 			
 			if (textBidi.CharIsRtl.size() > 0 && textBidi.CharIsRtl[0] && rtlCursorPos > 0)
@@ -1457,7 +1341,7 @@ s32 CGUIEditBox::getCursorPos(s32 x, s32 y)
 	if ( !txtLine )
 		return 0;
 	
-	TextBidiData textBidi = applyBidiReordering(*txtLine);
+	core::TextBidiData textBidi = core::applyBidiReordering(*txtLine);
 	s32 visualPos = font->getCharacterFromPos(textBidi.TextBidi.c_str(), x - CurrentTextRect.UpperLeftCorner.X);
 	
 	s32 logicalPos = textBidi.logicalCursorPos(visualPos);
@@ -1777,8 +1661,7 @@ void CGUIEditBox::calculateScrollPos()
 		core::stringw *txtLine = hasBrokenText ? &BrokenText[cursLine] : &Text;
 		s32 logicalCPos = hasBrokenText ? CursorPos - BrokenTextPositions[cursLine] : CursorPos;
 		
-		s32 startPos = hasBrokenText ? BrokenTextPositions[cursLine] : 0;
-		TextBidiData textBidi = applyBidiReordering(*txtLine);
+		core::TextBidiData textBidi = core::applyBidiReordering(*txtLine);
 		s32 rtlCursorPos = textBidi.visualCursorPos(logicalCPos);
 		
 		if (textBidi.CharIsRtl.size() > 0 && textBidi.CharIsRtl[0] && rtlCursorPos > 0)
